@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# What is NOT uploaded to GitHub
+# ---------------------------------------------------------------------------
+
+# Your data: devices, scans, alerts, settings and the admin account
+*.db
+*.db-journal
+backups/
+logs/
+*.log
+
+# Python's own files
+__pycache__/
+*.pyc
+mrk1_env/
+.venv/
+venv/
+
+# The AI model (1.1 GB, too big for GitHub). Download instructions are in the
+# build guide, Step 37. The licence file IS uploaded.
+models/*.gguf
+
+# Installer build output (made by build_installer.ps1; 1-2 GB)
+Mrk1-Installer/build/
+Mrk1-Installer/dist/
+Mrk1-Installer/Output/
+
+# Downloaded installers and archives
+*.zip
+*.exe
+
+# Editor and system files
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

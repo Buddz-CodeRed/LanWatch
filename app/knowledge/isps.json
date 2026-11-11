@@ -1,0 +1,199 @@
+{
+  "_about": "LanWatch NZ internet provider (ISP) knowledge base: the routers/modems each common New Zealand provider supplies, how to open their settings, and the provider's own help pages. Checked against the providers' help pages in November 2026; providers change their modems, so the label on the router is always the final word. A router model is recognised from the router's name (name_match, lower-case pieces). Used by app/services/router_advice.py. ADVICE ONLY: LanWatch never logs in to the router.",
+
+  "spark": {
+    "name": "Spark",
+    "help_url": "https://www.spark.co.nz/help/internet/broadband-help/spark-smart-modem-support",
+    "note": "Spark's help site has a support page for each of its modems (settings, Wi-Fi and factory reset).",
+    "routers": [
+      {
+        "model": "Spark Smart Modem (Arcadyan VRV9517)",
+        "brand": "arcadyan",
+        "name_match": ["vrv9517"],
+        "open": "Type http://192.168.1.254 into a web browser.",
+        "login": "The factory login is admin / admin (also printed under the Wi-Fi sticker on the back), which is exactly why it should be changed."
+      },
+      {
+        "model": "Spark Smart Modem 2 / Smart Modem 3",
+        "brand": null,
+        "name_match": ["smart modem 2", "smart modem 3", "smartmodem"],
+        "open": "Type http://192.168.1.254 into a web browser.",
+        "login": "The factory login is admin / admin (printed under the Wi-Fi sticker on the back). Change it."
+      },
+      {
+        "model": "Spark 5G Smart Modem",
+        "brand": null,
+        "name_match": ["5g smart modem"],
+        "open": "Type http://192.168.1.254 into a web browser.",
+        "login": "The factory login is admin / admin; the modem asks you to change it the first time you log in."
+      },
+      {
+        "model": "Huawei HG659 / HG630b (older Spark modems)",
+        "brand": "huawei",
+        "name_match": ["hg659", "hg630"],
+        "open": "Type http://192.168.1.254 into a web browser.",
+        "login": "Use the login printed on the modem's label, then change it."
+      }
+    ]
+  },
+
+  "skinny": {
+    "name": "Skinny",
+    "help_url": "https://www.spark.co.nz/help/modem-set-up/skinny-smart-modem-change-wifi-settings/",
+    "note": "Skinny is part of Spark, and its help pages are on Spark's website.",
+    "routers": [
+      {
+        "model": "Skinny Smart Modem",
+        "brand": null,
+        "name_match": ["skinny"],
+        "open": "Type http://192.168.1.254 into a web browser.",
+        "login": "The factory login is admin / admin; the modem then makes you choose a stronger password (8+ characters with a capital letter, a number and a symbol)."
+      },
+      {
+        "model": "Huawei B315 (wireless broadband)",
+        "brand": "huawei",
+        "name_match": ["b315"],
+        "open": "Type http://192.168.1.254 into a web browser.",
+        "login": "The factory login is admin / admin. Look for a password change option under the admin or system settings."
+      }
+    ]
+  },
+
+  "one_nz": {
+    "name": "One NZ (formerly Vodafone NZ)",
+    "help_url": "https://one.nz/faq/ultra-hub-modem-log-into-the-web-management-page",
+    "note": "One NZ has guides for updating the Ultra Hub's firmware and for factory resets on its help site.",
+    "routers": [
+      {
+        "model": "One NZ Ultra Hub",
+        "brand": null,
+        "name_match": ["ultrahub", "ultra hub", "ultra-hub"],
+        "open": "Type http://192.168.1.1 into a web browser.",
+        "login": "Use the login printed on the label underneath. If you changed it and forgot it, a factory reset puts it back (and also resets your Wi-Fi name and password)."
+      },
+      {
+        "model": "Huawei HG659 (older Vodafone modem)",
+        "brand": "huawei",
+        "name_match": ["hg659"],
+        "open": "Type http://192.168.1.1 into a web browser.",
+        "login": "Use the login printed on the modem's label, then change it."
+      }
+    ]
+  },
+
+  "2degrees": {
+    "name": "2degrees",
+    "help_url": "https://www.2degrees.nz/help/broadband-help/getting-started/passwords-and-settings",
+    "note": "2degrees also runs Orcon and Slingshot. Several of its newer modems are managed through an app rather than a web page.",
+    "routers": [
+      {
+        "model": "Nokia FastMile Gateway 3 (5G)",
+        "brand": "nokia",
+        "name_match": ["fastmile"],
+        "open": "Most settings: the Nokia WiFi app. Web page: the address on the sticker underneath.",
+        "login": "The web page's 'admin' password is on the sticker underneath the modem."
+      },
+      {
+        "model": "TP-Link HB810 (Hyperfibre) / NX620v",
+        "brand": "tp_link",
+        "name_match": ["hb810", "nx620"],
+        "open": "Managed through the Aginet app.",
+        "login": "Set up through the Aginet app; protect that account with a strong password."
+      },
+      {
+        "model": "AVM FRITZ!Box",
+        "brand": "avm",
+        "name_match": ["fritz"],
+        "open": "Type http://fritz.box into a web browser.",
+        "login": "The FRITZ!Box password is on the label underneath."
+      }
+    ]
+  },
+
+  "orcon": {
+    "name": "Orcon",
+    "help_url": "https://help.2degrees.nz/Orcon/Tech_Support/Wireless_troubleshooting_guide",
+    "note": "Orcon is now part of 2degrees, and its help pages are on 2degrees' help site.",
+    "routers": [
+      {
+        "model": "NetComm NF18 / NF4V",
+        "brand": "netcomm",
+        "name_match": ["nf18", "nf4v"],
+        "open": "Type the address on the modem's label into a web browser.",
+        "login": "NetComm modems have several logins; change the 'admin' and 'support' passwords."
+      },
+      {
+        "model": "Orcon Genius",
+        "brand": null,
+        "name_match": ["genius"],
+        "open": "Type the address on the modem's label into a web browser.",
+        "login": "Use the login printed on the label, then change it."
+      }
+    ]
+  },
+
+  "slingshot": {
+    "name": "Slingshot",
+    "help_url": "https://help.2degrees.nz/Slingshot/Broadband/How_do_I_access_my_Slingshot_modem%3F",
+    "note": "Slingshot is now part of 2degrees, and its help pages are on 2degrees' help site.",
+    "routers": [
+      {
+        "model": "NetComm (NF18 and similar)",
+        "brand": "netcomm",
+        "name_match": ["nf18", "nf4v"],
+        "open": "Type the address on the modem's label into a web browser.",
+        "login": "There are three logins. Slingshot recommends changing only the 'admin' and 'support' passwords."
+      },
+      {
+        "model": "AVM FRITZ!Box 7490",
+        "brand": "avm",
+        "name_match": ["fritz"],
+        "open": "Type http://fritz.box into a web browser.",
+        "login": "The FRITZ!Box password is on the label underneath."
+      }
+    ]
+  },
+
+  "contact": {
+    "name": "Contact Energy",
+    "help_url": "https://contact.co.nz/support/broadband/modem-settings",
+    "note": "Contact's broadband team: 0800 266 825 (Monday to Saturday).",
+    "routers": [
+      {
+        "model": "TP-Link HX510 (fibre, mesh)",
+        "brand": "tp_link",
+        "name_match": ["hx510"],
+        "open": "Managed through the TP-Link app.",
+        "login": "Set up through the TP-Link app; protect that account with a strong password."
+      },
+      {
+        "model": "TP-Link Deco X58-4G (wireless broadband)",
+        "brand": "tp_link",
+        "name_match": ["x58", "deco"],
+        "open": "Managed through the Deco app.",
+        "login": "Set up through the Deco app; protect that account with a strong password."
+      },
+      {
+        "model": "NetComm NF20 / NF18ACV",
+        "brand": "netcomm",
+        "name_match": ["nf20", "nf18acv"],
+        "open": "The NF18ACV uses http://192.168.20.1; for the NF20, type the address on its label into a web browser.",
+        "login": "The NF18ACV's factory login is admin / admin, which should be changed."
+      }
+    ]
+  },
+
+  "mercury": {
+    "name": "Mercury",
+    "help_url": "https://www.mercury.co.nz/",
+    "note": "LanWatch doesn't have details of Mercury's modems yet: use the address and login on the modem's label, and Mercury's help centre.",
+    "routers": []
+  },
+
+  "other": {
+    "name": "Another provider / my own router",
+    "help_url": null,
+    "note": "Use the address and login on the router's label, or the maker's app. The steps below work for almost every router.",
+    "routers": []
+  }
+}

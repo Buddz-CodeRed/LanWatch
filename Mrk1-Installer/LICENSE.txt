@@ -1,0 +1,50 @@
+LanWatch MrK1 (version 0.01)
+Home network monitoring system
+=============================================================================
+
+LanWatch is provided "as is", without warranty of any kind. It monitors the
+network it is installed on, and gives advice only: it never changes the
+settings of any device on your network and never tries passwords.
+
+Only scan networks you own or have permission to scan.
+
+LanWatch runs entirely on this computer. Its web pages are served at
+http://127.0.0.1:5000 and can only be opened from this computer. Nothing is
+sent to the internet. The AI assistant runs locally.
+
+During installation, if Nmap is not already installed, the official Nmap
+installer (nmap-7.993-setup.exe) is downloaded from https://nmap.org and run.
+Nmap and Npcap are separate products with their own licences, shown by their
+own installer:
+  - Nmap:  Nmap Public Source License (https://nmap.org/npsl/)
+  - Npcap: Npcap License (https://npcap.com/oem/redist.html)
+
+
+THIRD-PARTY COMPONENTS INCLUDED IN LANWATCH
+=============================================================================
+
+Component                     Licence
+----------------------------  ---------------------------------------------
+Python 3.14                   Python Software Foundation License
+Flask, Werkzeug, Jinja2,      BSD-3-Clause
+  MarkupSafe, ItsDangerous,
+  Click, Blinker
+waitress                      Zope Public License 2.1
+scapy                         GNU General Public License v2.0
+python-nmap                   GNU General Public License v3.0
+psutil                        BSD-3-Clause
+mac-vendor-lookup             (see https://github.com/bauerj/mac_vendor_lookup)
+llama-cpp-python / llama.cpp  MIT
+NumPy                         BSD-3-Clause (and others: 0BSD, MIT, Zlib, CC0)
+diskcache                     Apache License 2.0
+aiohttp, aiofiles             Apache License 2.0 (aiohttp also MIT)
+Qwen2.5-1.5B-Instruct model   Apache License 2.0 (full text installed in
+                              models\LICENSE-Qwen2.5-1.5B-Instruct.txt)
+Tailwind CSS (styles)         MIT
+Inter, JetBrains Mono fonts   SIL Open Font License 1.1
+Material Symbols icons        Apache License 2.0
+PyInstaller bootloader        GPL-2.0 with an exception that allows its use
+                              in programs under any licence
+
+The source code of the GPL-licensed components (scapy, python-nmap) is
+available from their projects (https://scapy.net, https://pypi.org/project/python-nmap/).

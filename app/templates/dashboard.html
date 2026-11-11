@@ -1,0 +1,335 @@
+{# ==========================================================================
+   FILE: app/templates/dashboard.html  -  DASHBOARD PAGE
+   --------------------------------------------------------------------------
+   Opened at: /  (route in app/__init__.py)
+   Logic:     static/js/utils.js + static/js/dashboard.js
+   Layout:    extends templates/base.html (head, sidebar, header frame,
+              phone menu). This file only fills in its blocks.
+   This file only describes WHAT is on the page. The JavaScript finds the
+   elements by their id="..." and fills them with data from the API.
+
+   Sections (top to bottom)        id(s) the JavaScript fills
+     Wi-Fi badge (header)          networkBadge, networkSsid, networkSignal
+     Scan control                  networkInput, scanType, scanButton, scanStatus
+     Summary cards                 deviceMetric, lastScanMetric, scanDurationMetric,
+                                   usageTotal, usageStatus, usageActiveDevices, alertMetric
+     Active Network Fleet          fleetCarouselTrack, fleetPrev, fleetNext
+     Discovered devices table      deviceTableBody, deviceCount
+     Scan history table            scanHistoryBody, scanCount
+     Alerts table                  alertTableBody, alertCount
+     System warning                systemWarning, systemWarningList (only if something is missing)
+     Security overview             adviceMetric, adviceMetricNote, summaryText, summaryBadge, summaryMeta
+
+   Jinja: {{ local_subnets }} comes from home() in app/__init__.py and
+   pre-fills the scan box (Settings default network first).
+
+   (This whole block is a template comment: Flask removes it before
+    sending the page, so it never reaches the browser.)
+   ========================================================================== #}
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
+{% block title %}MrK1 Dashboard{% endblock %}
+
+{% block header %}
+            <div class="flex items-center gap-4 min-w-0 flex-1">
+                <div class="min-w-0">
+                    <h2 class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">Home Network Monitoring System</h2>
+                    <p class="hidden truncate font-mono text-xs text-slate-400 sm:block">Real-time LAN host discovery & anomaly detection</p>
+                </div>
+
+                <!-- Wi-Fi badge: filled by dashboard.js loadNetworkInfo() (hidden when not on Wi-Fi).
+                     The wrapper hides it on phones (below 768 px): it doesn't fit next to the title. -->
+                <div class="hidden shrink-0 md:block">
+                <div id="networkBadge" class="hidden items-center gap-2.5 rounded-full border border-white/10 bg-[#0F172A]/80 px-4 py-1.5 backdrop-blur-md shadow-inner">
+                    <span class="material-symbols-outlined text-base text-[#10B981]">wifi</span>
+                    <div class="leading-tight">
+                        <p class="font-mono text-[10px] uppercase tracking-widest text-slate-400">Connected Network</p>
+                        <p class="font-mono text-xs font-semibold text-[#00F2FE]">
+                            <span id="networkSsid">…</span>
+                        </p>
+                    </div>
+                    <span id="networkSignal" class="font-mono rounded-full bg-[#10B981]/15 border border-[#10B981]/30 px-2 py-0.5 text-xs text-[#34D399]"></span>
+                </div>
+                </div>
+            </div>
+{% endblock %}
+
+{% block content %}
+        <section class="mx-auto flex max-w-[1440px] flex-col gap-4 p-4 sm:gap-6 sm:p-5 md:p-8">
+
+            <!-- ===== SECTION: SYSTEM WARNING (dashboard.js loadSystemCheck) =====
+                 Only shown if Nmap, Npcap or Administrator rights are missing. -->
+            <div id="systemWarning" class="hidden rounded-xl border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-4" role="alert">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined shrink-0 text-[#FBBF24]">report</span>
+                    <div class="min-w-0">
+                        <p class="font-semibold text-[#FDE68A]">LanWatch is missing something it needs</p>
+                        <ul id="systemWarningList" class="mt-1 list-disc space-y-1 pl-5 text-sm text-[#FDE68A]/90"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: PAGE TITLE + SCANNER STATE (scanStatus, set by runScan/pollScanStatus) ===== -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold tracking-tight text-white">Dashboard</h1>
+                    <span class="rounded-full bg-[#00F2FE]/10 border border-[#00F2FE]/30 px-3 py-0.5 font-mono text-xs text-[#00F2FE]">Online</span>
+                </div>
+                <div class="font-mono text-xs text-slate-400">
+                    Scanner state: <span id="scanStatus" class="font-semibold text-[#00F2FE]">Ready</span>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: SCAN CONTROL =====
+                 Trigger: pick Quick/Full in scanType, click "Run Scan"
+                          -> dashboard.js runScan() -> POST /api/scans/ -->
+            <div class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-6 shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#00F2FE]/50 via-[#8B5CF6]/30 to-transparent"></div>
+                <div class="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[#00F2FE]">find_in_page</span>
+                            <h3 class="text-lg font-bold text-white tracking-wide">Find Devices on Your Network</h3>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-300 max-w-xl">
+                            Scan your home or office network to see every phone, computer, TV and other device connected to it.
+                            A <b>quick scan</b> finds devices in a minute or two. A <b>full scan</b> also finds the open ports and services on each device, and can take 10-30 minutes.
+                        </p>
+                    </div>
+                    <div class="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
+                        <div class="relative">
+                            <label for="networkInput" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Target Subnet (CIDR)</label>
+                            <input id="networkInput" type="text"
+                                value="{{ local_subnets[0] if local_subnets else '192.168.1.0/24' }}"
+                                placeholder="192.168.1.0/24"
+                                list="subnetSuggestions"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] md:w-64">
+                            <datalist id="subnetSuggestions">
+                                {% for subnet in local_subnets %}
+                                    <option value="{{ subnet }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <div>
+                            <label for="scanType" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Scan Type</label>
+                            <select id="scanType"
+                                class="font-mono h-10 w-full rounded-lg border border-white/10 bg-[#090D16] px-3 text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 md:w-36">
+                                <option value="quick">Quick</option>
+                                <option value="full">Full (ports)</option>
+                            </select>
+                        </div>
+                        <button id="scanButton" class="shrink-0 whitespace-nowrap mt-auto h-10 self-end rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-6 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
+                            Run Scan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: SUMMARY CARDS ===== -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+                <!-- Card 1: devices discovered + latest scan (loadDevices, loadScanHistory) -->
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 relative overflow-hidden group hover:border-[#00F2FE]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Discovered Devices</span>
+                        <span class="material-symbols-outlined text-lg text-[#00F2FE]">devices</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-white"><span id="deviceMetric">0</span></p>
+                    <div class="mt-2 flex items-center justify-between font-mono text-xs text-slate-400 border-t border-white/5 pt-2">
+                        <span>Last scan: <span id="lastScanMetric" class="text-slate-200">—</span></span>
+                        <span>Dur: <span id="scanDurationMetric" class="text-slate-200">—</span></span>
+                    </div>
+                </div>
+
+                <!-- Card 2: live network speed, Live/Idle (loadTotalTraffic) -->
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 relative overflow-hidden group hover:border-[#10B981]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Traffic Monitoring</span>
+                        <span class="material-symbols-outlined text-lg text-[#10B981]">monitoring</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-[#34D399]"><span id="usageTotal">0</span></p>
+                    <div class="mt-2 flex items-center justify-between font-mono text-xs text-slate-400 border-t border-white/5 pt-2">
+                        <span>Overall Data Usage</span>
+                        <span id="usageStatus" class="text-[#34D399]">—</span>
+                    </div>
+                </div>
+
+                <!-- Card 3: active hosts (loadDevices) -->
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 relative overflow-hidden group hover:border-[#8B5CF6]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Active Hosts</span>
+                        <span class="material-symbols-outlined text-lg text-[#8B5CF6]">lan</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-[#C4ABFF]"><span id="usageActiveDevices">0</span></p>
+                    <div class="mt-2 flex items-center justify-between font-mono text-xs text-slate-400 border-t border-white/5 pt-2">
+                        <span>Status:</span>
+                        <span class="text-[#C4ABFF]">Online & Tracked</span>
+                    </div>
+                </div>
+
+                <!-- Card 4: unresolved alerts (loadAlerts) -->
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 relative overflow-hidden group hover:border-[#EF4444]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Active Alerts</span>
+                        <span class="material-symbols-outlined text-lg text-[#EF4444]">warning</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-[#FFB4AB]"><span id="alertMetric">0</span></p>
+                    <div class="mt-2 flex items-center justify-between font-mono text-xs text-slate-400 border-t border-white/5 pt-2">
+                        <span>Status:</span>
+                        <span id="alertStatus" class="text-[#FFB4AB]">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            
+            <!-- ===== SECTION: SECURITY OVERVIEW (dashboard.js loadSecurityOverview) =====
+                 Left:  security advice to review  (GET /api/findings/)
+                 Right: latest network summary, written after each full scan
+                        (GET /api/reports/latest-summary; AI text if available) -->
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                <a href="/advice" class="group rounded-xl border border-white/10 bg-[#0F172A]/70 p-5 backdrop-blur-md transition-all hover:border-[#10B981]/40">
+                    <div class="mb-2 flex items-center justify-between text-slate-400">
+                        <span class="font-mono text-xs uppercase tracking-wider">Security Advice</span>
+                        <span class="material-symbols-outlined text-[#10B981]">health_and_safety</span>
+                    </div>
+                    <p id="adviceMetric" class="text-3xl font-bold text-white">—</p>
+                    <p id="adviceMetricNote" class="mt-1 text-sm text-slate-400">Run a full scan to get security advice.</p>
+                    <p class="mt-3 text-xs text-[#00F2FE] group-hover:underline">Open Security Advice →</p>
+                </a>
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 p-5 backdrop-blur-md">
+                    <div class="mb-2 flex items-center justify-between text-slate-400">
+                        <span class="font-mono text-xs uppercase tracking-wider">Latest Network Summary</span>
+                        <span id="summaryBadge" class="hidden items-center gap-1 rounded-full border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-[#C4ABFF]">
+                            <span class="material-symbols-outlined text-sm">auto_awesome</span>AI summary
+                        </span>
+                    </div>
+                    <div id="summaryText" class="text-sm leading-relaxed text-slate-200">No full scan yet. Choose <b>Full</b> next to Run Scan to get a summary of your network.</div>
+                    <p id="summaryMeta" class="mt-2 font-mono text-xs text-slate-500"></p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: ACTIVE NETWORK FLEET (carousel) =====
+                 Cards drawn by dashboard.js renderFleetCards(); ← → slide it (updateCarousel).
+                 On phones the strip is swiped instead (css/style.css) and #fleetPosition counts. -->
+            <section class="rounded-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#00F2FE] mb-1">
+                            <span class="material-symbols-outlined text-sm">view_in_ar</span>
+                            <span>Online Now</span>
+                        </div>
+                        <h2 class="text-xl font-bold font-sans text-white flex items-center gap-2">
+                            Devices Connected Right Now
+                        </h2>
+                        <p class="text-xs text-[#849495] mt-1">
+                            Each card is a device currently using your network.
+                            <span class="hidden md:inline">Use the arrows to see them all,</span><span class="md:hidden">Swipe left or right to see them all,</span>
+                            or tap "Inspect" on a card for its full details.
+                        </p>
+                    </div>
+                    <!-- on phones: a "2 / 9" counter instead of the arrows (the cards are swiped) -->
+                    <p id="fleetPosition" class="font-mono text-xs text-[#849495] md:hidden" aria-live="polite"></p>
+                    <div class="mt-3 hidden justify-end gap-2 md:flex">
+                        <button id="fleetPrev" class="rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-[#849495] hover:text-[#00F2FE] disabled:opacity-10">←</button>
+                        <button id="fleetNext" class="rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-[#849495] hover:text-[#00F2FE] disabled:opacity-10">→</button>
+                    </div>
+                </div>
+
+                <!-- Carousel strip: one card per active device -->
+                <div class="relative">
+                    <div id="fleetCarouselViewport" class="overflow-hidden">
+                        <div id="fleetCarouselTrack" class="flex gap-4 transition-transform duration-500 ease-in-out">No devices available to display at this time.</div>
+                    </div>                   
+                </div>
+            </section>
+
+            <!-- ===== SECTION: DISCOVERED DEVICES TABLE (dashboard.js renderDeviceTable) ===== -->
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex items-center justify-between border-b border-white/10 p-5">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#00F2FE]">router</span>
+                        <h3 class="font-bold text-white tracking-wide">Discovered Network Devices</h3>
+                    </div>
+                    <span id="deviceCount" class="font-mono rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-[#00F2FE]">0 Devices</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="mobile-cards w-full text-left text-sm">
+                        <thead class="border-b border-white/10 bg-[#090D16]/60 font-mono text-xs uppercase tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-5 py-3.5">Device</th>
+                                <th class="px-5 py-3.5">Device Operating System</th>
+                                <th class="px-5 py-3.5">MAC Address</th>
+                                <th class="px-5 py-3.5">Status</th>
+                                <th class="px-5 py-3.5">Up Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deviceTableBody" class="divide-y divide-white/5">
+                            <tr><td colspan="5" class="px-5 py-10 text-center font-mono text-slate-400">No devices discovered yet. Run a subnet scan above.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: SCAN HISTORY TABLE (dashboard.js displayScanHistory, newest 10) ===== -->
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex items-center justify-between border-b border-white/10 p-5">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#8B5CF6]">manage_search</span>
+                        <h3 class="font-bold text-white tracking-wide">Subnet Scan Audit History</h3>
+                    </div>
+                    <span id="scanCount" class="font-mono rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-[#C4ABFF]">0 Scans</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="mobile-cards w-full text-left text-sm">
+                        <thead class="border-b border-white/10 bg-[#090D16]/60 font-mono text-xs uppercase tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-5 py-3.5">ID</th>
+                                <th class="px-5 py-3.5">Subnet</th>
+                                <th class="px-5 py-3.5">Status</th>
+                                <th class="px-5 py-3.5">Duration</th>
+                                <th class="px-5 py-3.5">Result Summary</th>
+                                <th class="px-5 py-3.5">Start Time</th>
+                                <th class="px-5 py-3.5">End Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scanHistoryBody" class="divide-y divide-white/5">
+                            <tr><td colspan="7" class="px-5 py-10 text-center font-mono text-slate-400">No scans recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: ALERTS TABLE (dashboard.js displayAlerts, newest 10) ===== -->
+            <div class="overflow-hidden rounded-xl border border-[#EF4444]/30 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex items-center justify-between border-b border-[#EF4444]/20 bg-[#EF4444]/10 p-5">
+                    <div class="flex items-center gap-2.5">
+                        <span class="material-symbols-outlined text-xl text-[#EF4444]">shield_with_house</span>
+                        <h3 class="font-bold text-white tracking-wide">Security & Bandwidth Spike Alerts</h3>
+                    </div>
+                    <span id="alertCount" class="font-mono rounded-full bg-[#EF4444]/20 border border-[#EF4444]/40 px-3 py-1 text-xs font-semibold text-[#FFB4AB]">0 Alerts</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="mobile-cards w-full text-left text-sm">
+                        <thead class="border-b border-white/10 bg-[#090D16]/60 font-mono text-xs uppercase tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-5 py-3.5">Severity</th>
+                                <th class="px-5 py-3.5">Device / Hostname</th>
+                                <th class="px-5 py-3.5">IP / MAC</th>
+                                <th class="px-5 py-3.5">Alert Message</th>
+                                <th class="px-5 py-3.5">Detected At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alertTableBody" class="divide-y divide-white/5">
+                            <tr><td colspan="5" class="px-5 py-8 text-center font-mono text-slate-400">No active traffic alerts detected.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+{% endblock %}
+
+{% block scripts %}
+    <!-- ===== PAGE SCRIPTS: shared helpers first, then this page's logic ===== -->
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

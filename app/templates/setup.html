@@ -1,0 +1,70 @@
+{# ==========================================================================
+   FILE: app/templates/setup.html  -  FIRST-RUN SET-UP PAGE
+   --------------------------------------------------------------------------
+   Opened at: /setup  (route in app/__init__.py)
+   Logic:     static/js/setup.js
+   Layout:    extends templates/base.html (head, sidebar, header frame,
+              phone menu). This file only fills in its blocks.
+
+   Shown when NO admin account exists yet: every page redirects here until
+   one is created (app/__init__.py require_admin_account). On Windows the
+   installer creates the account, so this is the safety net (e.g. if the
+   account was removed to reset a forgotten password).
+
+   Sections                        id(s) the JavaScript fills / reads
+     Set-up form                   setupForm, setupUsername, setupPassword,
+                                   setupConfirm, setupMsg, setupSubmit
+
+   (This whole block is a template comment: Flask removes it before
+    sending the page, so it never reaches the browser.)
+   ========================================================================== #}
+{% extends "base.html" %}
+{% set active_page = "" %}
+{% block title %}Welcome{% endblock %}
+
+{% block header %}
+            <div class="min-w-0 flex-1">
+                <h2 class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">Home Network Monitoring System</h2>
+                <p class="hidden truncate font-mono text-xs text-slate-400 sm:block">First-time set-up</p>
+            </div>
+{% endblock %}
+
+{% block content %}
+        <section class="mx-auto flex max-w-xl flex-col gap-6 p-4 sm:p-8">
+            <!-- ===== SECTION: CREATE THE ADMIN ACCOUNT =====
+                 Trigger: "Create account" -> setup.js createAccount() -> POST /api/account/ -->
+            <form id="setupForm" class="rounded-xl border border-white/10 bg-[#0F172A]/70 p-6 shadow-2xl backdrop-blur-md">
+                <div class="mb-5 flex items-center gap-3">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#00F2FE]/10 text-[#00F2FE]">
+                        <span class="material-symbols-outlined">admin_panel_settings</span>
+                    </span>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Welcome to LanWatch</h1>
+                        <p class="text-sm text-slate-400">Create the admin account. Its password protects the System Settings and resolving alerts.</p>
+                    </div>
+                </div>
+
+                <label for="setupUsername" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Username</label>
+                <input id="setupUsername" type="text" autocomplete="username" maxlength="32" spellcheck="false" required
+                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE]">
+                <p class="mt-1 text-xs text-slate-500">3-32 letters, numbers, dots, dashes or underscores.</p>
+
+                <label for="setupPassword" class="mb-1 mt-4 block font-mono text-xs uppercase tracking-wider text-slate-400">Password</label>
+                <input id="setupPassword" type="password" autocomplete="new-password" maxlength="128" required
+                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE]">
+                <p class="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+
+                <label for="setupConfirm" class="mb-1 mt-4 block font-mono text-xs uppercase tracking-wider text-slate-400">Confirm password</label>
+                <input id="setupConfirm" type="password" autocomplete="new-password" maxlength="128" required
+                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE]">
+
+                <p id="setupMsg" class="mt-3 min-h-[1.25rem] font-mono text-xs text-[#FFB4AB]" role="status" aria-live="polite"></p>
+                <button id="setupSubmit" type="submit"
+                    class="mt-1 h-11 w-full rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] font-bold text-[#090D16] transition-all active:scale-95 disabled:opacity-50">Create account</button>
+            </form>
+        </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/setup.js') }}"></script>
+{% endblock %}

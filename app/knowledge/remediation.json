@@ -1,0 +1,136 @@
+{
+  "_about": "LanWatch remediation (advice) knowledge base. One article per piece of advice, referred to by id from ports.json and app/services/findings.py. ADVICE ONLY: LanWatch never changes any device itself. difficulty: easy | medium | advanced.",
+
+  "disable_telnet": {
+    "title": "Turn off Telnet",
+    "difficulty": "medium",
+    "why": "Telnet sends passwords without encryption. Anyone on your network could read them and take control of the device.",
+    "steps": [
+      "Find out which device it is (name, maker and address are shown in LanWatch).",
+      "Open the device's settings page or app. For routers, cameras and printers this is usually its address typed into a web browser.",
+      "Look for 'Telnet', 'Remote access', 'Remote management' or 'Advanced > Services', and switch Telnet off.",
+      "If there is no option to switch it off, update the device's software (firmware). If it still can't be switched off, ask the maker or consider replacing the device."
+    ]
+  },
+  "disable_ftp": {
+    "title": "Turn off FTP or switch to a secure option",
+    "difficulty": "medium",
+    "why": "FTP sends passwords and files without encryption, so they can be read by others on your network.",
+    "steps": [
+      "Open the device's settings page or app (often network storage or a printer).",
+      "Look for 'FTP', 'File services' or 'File transfer' and switch FTP off if you don't use it.",
+      "If you need file transfer, choose 'SFTP' or 'FTPS' (the encrypted versions) if the device offers them."
+    ]
+  },
+  "strong_device_passwords": {
+    "title": "Use a strong, unique password on the device",
+    "difficulty": "easy",
+    "why": "A device's settings page or login is only as safe as its password. Default and simple passwords are the first thing attackers try.",
+    "steps": [
+      "Open the device's settings page or app and find 'Administrator', 'Admin password' or 'Account'.",
+      "If the password is still the one printed on the device or in its manual, change it.",
+      "Use a long password you don't use anywhere else (a password manager makes this easy)."
+    ]
+  },
+  "router_default_password": {
+    "title": "Check your router's admin password isn't the default",
+    "difficulty": "easy",
+    "why": "Your router controls your whole network. Its settings page is reachable from every device at home, and default admin passwords are widely known. LanWatch never tries passwords itself: this is a reminder to check.",
+    "steps": [
+      "Type your router's address (shown in LanWatch) into a web browser to open its settings page.",
+      "Log in. If the admin password is the one on the sticker or in the manual (or something like 'admin'), change it.",
+      "Look for 'Administration', 'System' or 'Management', and set a long, unique password.",
+      "This is the admin password for the router's settings, not the Wi-Fi password, although changing a default Wi-Fi password is also a good idea."
+    ]
+  },
+  "router_https_admin": {
+    "title": "Use the encrypted (HTTPS) settings page on your router",
+    "difficulty": "medium",
+    "why": "Your router's settings page is not encrypted, so your admin password could be read by another device on your network while you log in.",
+    "steps": [
+      "Open your router's settings page and look for 'HTTPS', 'Secure management' or 'Local management'.",
+      "Switch on HTTPS (encrypted) access if it is available, and switch off plain HTTP if you can.",
+      "If there is no such option, update the router's software (firmware), and only log in to it from devices you trust."
+    ]
+  },
+  "disable_upnp": {
+    "title": "Consider turning off UPnP on your router",
+    "difficulty": "medium",
+    "why": "UPnP lets any device at home open connections from the internet without asking you. It is convenient for games and video calls, but a compromised device could misuse it.",
+    "steps": [
+      "Open your router's settings page and look for 'UPnP' (often under 'Advanced', 'NAT' or 'Network').",
+      "Switch it off if you don't need it.",
+      "If a game console or app stops working afterwards, you can switch it back on, or set up only the specific connection it needs ('port forwarding')."
+    ]
+  },
+  "review_file_sharing": {
+    "title": "Check what this device is sharing",
+    "difficulty": "easy",
+    "why": "File sharing is normal on computers and network storage, but shared folders should need a password and only contain what you mean to share.",
+    "steps": [
+      "On Windows: Settings > Network & internet > Advanced network settings > Advanced sharing settings. Turn off file and printer sharing on networks you don't trust.",
+      "On network storage: open its app or settings page and check each shared folder has a password and isn't open to 'everyone' or 'guest'.",
+      "On a device that shouldn't share files at all (a TV or camera, for example), look for a 'file sharing' or 'SMB' option and turn it off."
+    ]
+  },
+  "review_remote_desktop": {
+    "title": "Make sure remote screen control is meant to be on",
+    "difficulty": "medium",
+    "why": "Remote Desktop and VNC let someone control this device's screen. If you don't use them, they are an unnecessary way in; if you do, they need a strong password.",
+    "steps": [
+      "If you don't use remote control: on Windows go to Settings > System > Remote Desktop and switch it off; for VNC, close or uninstall the VNC program.",
+      "If you do use it: make sure the account has a strong, unique password.",
+      "Never make it reachable from the internet (for example with router 'port forwarding'); use a VPN instead."
+    ]
+  },
+  "protect_databases": {
+    "title": "Protect the database on this device",
+    "difficulty": "advanced",
+    "why": "Databases hold data directly. Many are installed with no password or allow every device on the network to connect.",
+    "steps": [
+      "Find which program installed the database (often a home-server app or a developer tool).",
+      "In the database's settings, set a strong password and allow connections only from the device itself ('localhost') unless other devices really need it.",
+      "If you don't know why it is there, ask whoever set up the device, or uninstall the program that added it."
+    ]
+  },
+  "secure_cameras": {
+    "title": "Secure your camera's video stream",
+    "difficulty": "medium",
+    "why": "Some cameras let anyone on the network watch their video, or use a default password that is easy to find online.",
+    "steps": [
+      "Open the camera's app or settings page and change any default password.",
+      "Look for 'RTSP', 'ONVIF' or 'Local streaming'. Switch it off if you only use the maker's app, or make sure it needs a password.",
+      "Update the camera's software (firmware) from its app."
+    ]
+  },
+  "secure_smart_home": {
+    "title": "Add a password (and encryption) to smart-home messages",
+    "difficulty": "advanced",
+    "why": "Unprotected MQTT lets any device on your network read sensors or switch things on and off.",
+    "steps": [
+      "Open the settings of your smart-home hub or MQTT broker (for example Home Assistant's Mosquitto add-on).",
+      "Turn off 'anonymous' access and create a username and password for your devices.",
+      "If possible, use the encrypted port 8883 (MQTT over TLS) instead of 1883."
+    ]
+  },
+  "keep_devices_updated": {
+    "title": "Keep the device's software up to date",
+    "difficulty": "easy",
+    "why": "Updates fix security problems that attackers know about. Many network services are only risky on old versions.",
+    "steps": [
+      "Computers: turn on automatic updates (Windows Update, macOS Software Update).",
+      "Routers, cameras, printers and network storage: open the device's app or settings page and look for 'Firmware update' or 'Check for updates'.",
+      "Replace devices that no longer get updates from their maker."
+    ]
+  },
+  "review_unknown_service": {
+    "title": "Check what this service is",
+    "difficulty": "medium",
+    "why": "An unexpected service isn't necessarily a problem, but every service that accepts connections is a possible way in, so it's worth knowing what each one is.",
+    "steps": [
+      "Note the device and port number shown in LanWatch.",
+      "Check the device's settings page or app, or search the web for the device model and port number, to find out what uses it.",
+      "If it is a feature you don't use, switch it off. If you can't tell what it is, ask whoever set up the device."
+    ]
+  }
+}

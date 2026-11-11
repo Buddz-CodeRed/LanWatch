@@ -1,0 +1,455 @@
+{# ==========================================================================
+   FILE: app/templates/settings.html  -  SYSTEM SETTINGS PAGE
+   --------------------------------------------------------------------------
+   Opened at: /settings  (route in app/__init__.py)
+   Logic:     static/js/settings.js
+   Layout:    extends templates/base.html (head, sidebar, header frame,
+              phone menu). This file only fills in its blocks.
+   This file only describes WHAT is on the page. The JavaScript finds the
+   elements by their id="..." and fills them with data from the API.
+
+   Sections                        id(s) the JavaScript fills / reads
+     Scanning                      quickInterval, fullInterval (+ presets), defaultSubnet, scanSave, scanReset
+     Traffic Monitoring            sampleInterval, refreshInterval, trafficSave, trafficReset
+     Password lock                 lockOverlay, lockForm, lockPassword, lockMsg, lockSubmit,
+                                   lockBar, lockState, lockButton   (settings.js GROUP 0)
+     AI Assistant                  aiStatusLine, aiEnabled, aiAutoSummary, aiSave, aiMsg
+     Phones and tablets            phoneEnabled, phoneRecognisedOnly, phoneStatus, phoneSessions (phone_settings.js)
+     Backups                       backupNow, backupFile, backupList, backupFolder, backupMsg (backups.js)
+     Account                       accUsername, accNewPassword, accConfirmPassword,
+                                   accCurrentPassword, accountSave
+
+   (This whole block is a template comment: Flask removes it before
+    sending the page, so it never reaches the browser.)
+   ========================================================================== #}
+{% extends "base.html" %}
+{% set active_page = "settings" %}
+{% block title %}System Settings{% endblock %}
+
+{% block header %}
+            <div class="min-w-0 flex-1">
+                <h2 class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">Home Network Monitoring System</h2>
+                <p class="hidden truncate font-mono text-xs text-slate-400 sm:block">Control how LanWatch scans and manage your account</p>
+            </div>
+            <!-- Lock state + "Lock settings" (settings.js GROUP 0) -->
+            <div id="lockBar" class="hidden items-center gap-3">
+                <span id="lockState" class="hidden font-mono text-xs text-slate-400 sm:inline"></span>
+                <button id="lockButton" type="button"
+                    class="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-sm text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all">
+                    <span class="material-symbols-outlined text-base">lock</span> Lock settings
+                </button>
+            </div>
+{% endblock %}
+
+{% block content %}
+        <!-- ===== ADMIN PASSWORD DIALOG (settings.js GROUP 0) =====
+             Covers the settings until the admin password is entered.
+             Trigger: "Unlock" -> settings.js submitUnlock() -> POST /api/auth/unlock
+             The SERVER also refuses every settings request while locked
+             (app/auth.py), so hiding this box doesn't get around it. -->
+        <div id="lockOverlay" class="fixed inset-0 z-[45] hidden items-center justify-center bg-[#090D16]/80 p-5 backdrop-blur-md md:left-64" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+            <form id="lockForm" class="w-full max-w-sm rounded-xl border border-white/10 bg-[#0F172A] p-6 shadow-2xl">
+                <div class="mb-4 flex items-center gap-3">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#00F2FE]/10 text-[#00F2FE]">
+                        <span class="material-symbols-outlined">lock</span>
+                    </span>
+                    <div>
+                        <h3 id="lockTitle" class="font-bold text-white">Admin password required</h3>
+                        <p class="text-xs text-slate-400">System Settings are protected.</p>
+                    </div>
+                </div>
+                <label for="lockPassword" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Admin password</label>
+                <input id="lockPassword" type="password" autocomplete="current-password" maxlength="128" required
+                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:opacity-50">
+                <p id="lockMsg" class="mt-2 min-h-[1.25rem] font-mono text-xs text-[#FFB4AB]" role="status" aria-live="polite"></p>
+                <button id="lockSubmit" type="submit"
+                    class="mt-2 h-10 w-full rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] font-bold text-[#090D16] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">Unlock</button>
+                <p class="mt-4 text-xs text-slate-500">Settings lock again after <span id="lockIdle">15</span> minutes without use. Other pages don't need the password.</p>
+                <a href="/" class="mt-2 inline-block text-xs text-[#00F2FE] hover:underline">← Back to the dashboard</a>
+            </form>
+        </div>
+
+        <section class="mx-auto flex max-w-[1440px] flex-col gap-6 p-5 md:p-8">
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <h1 class="text-2xl font-bold tracking-tight text-white">System Settings</h1>
+            </div>
+
+            <!-- ===== SECTION: SCANNING =====
+                 "Save changes" -> settings.js saveScan() -> PUT /api/settings/
+                 Used by: services/scan_scheduler.py, dashboard scan box -->
+            <section class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#00F2FE]/50 via-[#8B5CF6]/30 to-transparent"></div>
+                <div class="flex items-center gap-2.5 border-b border-white/10 p-5">
+                    <span class="material-symbols-outlined text-[#00F2FE]">radar</span>
+                    <div>
+                        <h3 class="font-bold tracking-wide text-white">Scanning</h3>
+                        <p class="font-mono text-xs text-slate-400">Choose how often LanWatch looks for devices on its own</p>
+                    </div>
+                </div>
+
+                <div id="scanBody" class="flex flex-col gap-8 p-6">
+
+                    <!-- Quick scan -->
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Automatic quick scan</h4>
+                            <p class="mt-1 text-sm text-slate-400">A fast check for new and missing devices. Set it to 0 to turn it off.</p>
+                        </div>
+                        <div>
+                            <label for="quickInterval" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Run every (minutes)</label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <input id="quickInterval" type="number" inputmode="numeric" min="0" max="10080" step="1" value="0"
+                                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 sm:w-40">
+                                <div class="flex flex-wrap gap-2" role="group" aria-label="Quick scan presets">
+                                    <button type="button" data-preset="0" class="presetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">Off</button>
+                                    <button type="button" data-preset="15" class="presetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">15 min</button>
+                                    <button type="button" data-preset="30" class="presetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">30 min</button>
+                                    <button type="button" data-preset="60" class="presetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">1 hour</button>
+                                    <button type="button" data-preset="360" class="presetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">6 hours</button>
+                                </div>
+                            </div>
+                            <p id="quickStatus" class="mt-2 font-mono text-xs text-slate-400">Loading…</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/5"></div>
+
+                    <!-- Full scan -->
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-semibold text-white">Automatic full scan</h4>
+                                <span id="fullBadge" class="hidden rounded-full border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-2.5 py-0.5 font-mono text-xs text-[#C4ABFF]">Unavailable</span>
+                            </div>
+                            <p class="mt-1 text-sm text-slate-400">A deeper scan that also finds the open ports and services on every device. It can take 10-30 minutes, so the shortest gap is 60 minutes. Set it to 0 to turn it off.</p>
+                        </div>
+                        <div>
+                            <label for="fullInterval" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Run every (minutes)</label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <input id="fullInterval" type="number" inputmode="numeric" min="0" max="10080" step="1" value="0" disabled
+                                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 sm:w-40">
+                                <div class="flex flex-wrap gap-2" role="group" aria-label="Full scan presets">
+                                    <button type="button" data-preset="0" class="fullPresetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">Off</button>
+                                    <button type="button" data-preset="180" class="fullPresetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">3 hours</button>
+                                    <button type="button" data-preset="360" class="fullPresetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">6 hours</button>
+                                    <button type="button" data-preset="720" class="fullPresetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">12 hours</button>
+                                    <button type="button" data-preset="1440" class="fullPresetBtn rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">1 day</button>
+                                </div>
+                            </div>
+                            <p id="fullStatus" class="mt-2 font-mono text-xs text-slate-400">Loading…</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/5"></div>
+
+                    <!-- Default network -->
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Default network</h4>
+                            <p class="mt-1 text-sm text-slate-400">The network to scan. Leave this empty and LanWatch will detect it.</p>
+                        </div>
+                        <div>
+                            <label for="defaultSubnet" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Network (CIDR)</label>
+                            <input id="defaultSubnet" type="text" placeholder="192.168.1.0/24" autocomplete="off" spellcheck="false"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 sm:w-64">
+                            <p class="mt-2 font-mono text-xs text-slate-500">Example: 192.168.1.0/24</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-white/10 bg-[#090D16]/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p id="scanMsg" class="min-h-[1.25rem] font-mono text-xs" role="status" aria-live="polite"></p>
+                    <div class="grid grid-cols-2 gap-3 sm:flex">
+                        <button id="scanReset" type="button" class="h-10 rounded-lg border border-white/10 px-4 text-sm text-slate-300 hover:border-white/30 hover:text-white transition-all disabled:cursor-not-allowed disabled:opacity-40 whitespace-nowrap" disabled>Discard changes</button>
+                        <button id="scanSave" type="button" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none whitespace-nowrap" disabled>Save changes</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== SECTION: TRAFFIC MONITORING =====
+                 "Save changes" -> settings.js saveTraffic() -> PUT /api/settings/
+                 Used by: services/network_monitor.py, utils.js getRefreshMs() -->
+            <section class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#10B981]/50 via-[#00F2FE]/30 to-transparent"></div>
+                <div class="flex items-center gap-2.5 border-b border-white/10 p-5">
+                    <span class="material-symbols-outlined text-[#10B981]">monitoring</span>
+                    <div>
+                        <h3 class="font-bold tracking-wide text-white">Traffic Monitoring</h3>
+                        <p class="font-mono text-xs text-slate-400">Control how often network speed is measured and shown</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-8 p-6">
+
+                    <!-- Sampling interval -->
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Measure traffic every</h4>
+                            <p class="mt-1 text-sm text-slate-400">How often LanWatch reads each device's traffic. A shorter time gives a livelier speed reading but uses more processing power and grows the database faster.</p>
+                        </div>
+                        <div>
+                            <label for="sampleInterval" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Seconds</label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <input id="sampleInterval" type="number" inputmode="numeric" min="1" max="300" step="1" value="5"
+                                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 sm:w-40">
+                                <div class="flex flex-wrap gap-2" role="group" aria-label="Measurement presets">
+                                    <button type="button" data-target="sampleInterval" data-preset="2" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">2 sec</button>
+                                    <button type="button" data-target="sampleInterval" data-preset="5" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">5 sec</button>
+                                    <button type="button" data-target="sampleInterval" data-preset="10" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">10 sec</button>
+                                    <button type="button" data-target="sampleInterval" data-preset="30" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">30 sec</button>
+                                    <button type="button" data-target="sampleInterval" data-preset="60" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">1 min</button>
+                                </div>
+                            </div>
+                            <p id="sampleStatus" class="mt-2 font-mono text-xs text-slate-400">Loading…</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/5"></div>
+
+                    <!-- Dashboard refresh -->
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Refresh the dashboard every</h4>
+                            <p class="mt-1 text-sm text-slate-400">How often the dashboard asks for new numbers. It takes effect the next time you open or reload the dashboard.</p>
+                        </div>
+                        <div>
+                            <label for="refreshInterval" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Seconds</label>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <input id="refreshInterval" type="number" inputmode="numeric" min="2" max="300" step="1" value="5"
+                                    class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 sm:w-40">
+                                <div class="flex flex-wrap gap-2" role="group" aria-label="Refresh presets">
+                                    <button type="button" data-target="refreshInterval" data-preset="5" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">5 sec</button>
+                                    <button type="button" data-target="refreshInterval" data-preset="10" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">10 sec</button>
+                                    <button type="button" data-target="refreshInterval" data-preset="30" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">30 sec</button>
+                                    <button type="button" data-target="refreshInterval" data-preset="60" class="trafficPreset rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all disabled:cursor-not-allowed disabled:opacity-40">1 min</button>
+                                </div>
+                            </div>
+                            <p id="refreshStatus" class="mt-2 font-mono text-xs text-slate-400">Loading…</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-white/10 bg-[#090D16]/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p id="trafficMsg" class="min-h-[1.25rem] font-mono text-xs" role="status" aria-live="polite"></p>
+                    <div class="grid grid-cols-2 gap-3 sm:flex">
+                        <button id="trafficReset" type="button" class="h-10 rounded-lg border border-white/10 px-4 text-sm text-slate-300 hover:border-white/30 hover:text-white transition-all disabled:cursor-not-allowed disabled:opacity-40 whitespace-nowrap" disabled>Discard changes</button>
+                        <button id="trafficSave" type="button" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none whitespace-nowrap" disabled>Save changes</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== SECTION: AI ASSISTANT =====
+                 "Save changes" -> settings.js saveAi() -> PUT /api/settings/
+                 Status line from GET /api/ai/status (routes/ai.py)
+                 Used by: routes/ai.py, services/scan_summary.py, ai_explain.js, reports.js -->
+            <section class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#8B5CF6]/50 via-[#00F2FE]/30 to-transparent"></div>
+                <div class="flex items-center gap-2.5 border-b border-white/10 p-5">
+                    <span class="material-symbols-outlined text-[#8B5CF6]">auto_awesome</span>
+                    <div>
+                        <h3 class="font-bold tracking-wide text-white">AI Assistant</h3>
+                        <p class="font-mono text-xs text-slate-400">Plain-English explanations written by a small AI that runs on this computer. Nothing is sent to the internet.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-8 p-6">
+                    <p id="aiStatusLine" class="rounded-lg bg-[#090D16] p-3 font-mono text-xs text-slate-400">Checking the AI…</p>
+
+                    <label class="grid cursor-pointer gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Use the AI assistant</h4>
+                            <p class="mt-1 text-sm text-slate-400">Shows "Explain this" buttons on alerts, open ports and security advice, and writes AI reports. When it is off, LanWatch still shows all its normal explanations.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input id="aiEnabled" type="checkbox" class="peer sr-only">
+                            <span class="relative h-6 w-11 shrink-0 rounded-full bg-white/10 transition-colors peer-checked:bg-[#8B5CF6] peer-focus-visible:ring-2 peer-focus-visible:ring-[#00F2FE] peer-disabled:opacity-50 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"></span>
+                            <span class="font-mono text-xs text-slate-400">On / off</span>
+                        </div>
+                    </label>
+
+                    <div class="border-t border-white/5"></div>
+
+                    <label class="grid cursor-pointer gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Summary after each full scan</h4>
+                            <p class="mt-1 text-sm text-slate-400">After every full scan, the AI writes a short summary for the Dashboard. Takes a few seconds of processing in the background.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input id="aiAutoSummary" type="checkbox" class="peer sr-only">
+                            <span class="relative h-6 w-11 shrink-0 rounded-full bg-white/10 transition-colors peer-checked:bg-[#8B5CF6] peer-focus-visible:ring-2 peer-focus-visible:ring-[#00F2FE] peer-disabled:opacity-50 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"></span>
+                            <span class="font-mono text-xs text-slate-400">On / off</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-white/10 bg-[#090D16]/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p id="aiMsg" class="min-h-[1.25rem] font-mono text-xs" role="status" aria-live="polite"></p>
+                    <div class="grid grid-cols-1 gap-3 sm:flex">
+                        <button id="aiSave" type="button" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none whitespace-nowrap" disabled>Save changes</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== SECTION: PHONES AND TABLETS (phone_settings.js) =====
+                 "Save changes" -> PUT /api/phone/settings (routes/phone.py)
+                 -> services/phone_listener.py starts/stops the home-network address
+                 Who may come in: app/phone_access.py -->
+            <section class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#00F2FE]/50 via-[#8B5CF6]/30 to-transparent"></div>
+                <div class="flex items-center gap-2.5 border-b border-white/10 p-5">
+                    <span class="material-symbols-outlined text-[#00F2FE]">smartphone</span>
+                    <div>
+                        <h3 class="font-bold tracking-wide text-white">Phones and tablets</h3>
+                        <p class="font-mono text-xs text-slate-400">Open LanWatch on a phone or tablet connected to your home Wi-Fi, while LanWatch is running on this computer. Never over the internet.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-8 p-6">
+                    <label class="grid cursor-pointer gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Allow phones and tablets</h4>
+                            <p class="mt-1 text-sm text-slate-400">Phones on your home network can open LanWatch after signing in with the admin username and password. Only works on networks Windows treats as Private (home), never on public Wi-Fi.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input id="phoneEnabled" type="checkbox" class="peer sr-only">
+                            <span class="relative h-6 w-11 shrink-0 rounded-full bg-white/10 transition-colors peer-checked:bg-[#00F2FE] peer-focus-visible:ring-2 peer-focus-visible:ring-[#00F2FE] peer-disabled:opacity-50 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"></span>
+                            <span class="font-mono text-xs text-slate-400">On / off</span>
+                        </div>
+                    </label>
+
+                    <div class="border-t border-white/5"></div>
+
+                    <label class="grid cursor-pointer gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Recognised devices only <span class="ml-1 rounded-full border border-[#10B981]/30 px-2 py-0.5 text-[11px] font-normal text-[#34D399]">recommended</span></h4>
+                            <p class="mt-1 text-sm text-slate-400">Only phones LanWatch recognises even see the sign-in page. A new phone that opens LanWatch appears below under <b>Waiting to be let in</b>: click <b>Allow</b> if it's yours. A visitor's phone or an unknown device gets nothing.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input id="phoneRecognisedOnly" type="checkbox" class="peer sr-only">
+                            <span class="relative h-6 w-11 shrink-0 rounded-full bg-white/10 transition-colors peer-checked:bg-[#00F2FE] peer-focus-visible:ring-2 peer-focus-visible:ring-[#00F2FE] peer-disabled:opacity-50 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-5"></span>
+                            <span class="font-mono text-xs text-slate-400">On / off</span>
+                        </div>
+                    </label>
+
+                    <!-- status, address + QR code, problems (phone_settings.js renderStatus) -->
+                    <div id="phoneStatus" class="rounded-lg bg-[#090D16] p-4 font-mono text-xs text-slate-400">Checking…</div>
+
+                    <!-- signed-in phones (phone_settings.js renderSessions) -->
+                    <div>
+                        <div class="flex items-center justify-between gap-3">
+                            <h4 class="font-semibold text-white">Signed-in phones and tablets</h4>
+                            <button id="phoneSignOutAll" type="button" class="hidden whitespace-nowrap rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:border-[#FFB4AB]/40 hover:text-[#FFB4AB]">Sign out all</button>
+                        </div>
+                        <div id="phoneSessions" class="mt-3 flex flex-col gap-2"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-white/10 bg-[#090D16]/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p id="phoneMsg" class="min-h-[1.25rem] font-mono text-xs" role="status" aria-live="polite"></p>
+                    <div class="grid grid-cols-1 gap-3 sm:flex">
+                        <button id="phoneSave" type="button" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none whitespace-nowrap" disabled>Save changes</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== SECTION: BACKUPS (backups.js) =====
+                 "Back up now" -> POST /api/backups/   "Restore" -> POST /api/backups/<name>/restore
+                 (routes/backup.py -> services/backup.py) -->
+            <section class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#00F2FE]/50 via-[#8B5CF6]/30 to-transparent"></div>
+                <div class="flex items-center gap-2.5 border-b border-white/10 p-5">
+                    <span class="material-symbols-outlined text-[#00F2FE]">backup</span>
+                    <div>
+                        <h3 class="font-bold tracking-wide text-white">Backups</h3>
+                        <p class="font-mono text-xs text-slate-400">Keep a copy of everything LanWatch has learned: your devices, scans, alerts and settings.</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-6 p-6">
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr] lg:gap-10">
+                        <div>
+                            <h4 class="font-semibold text-white">Back up now</h4>
+                            <p class="mt-1 text-sm text-slate-400">Saves a copy on this computer. The newest <span id="backupKeep">20</span> copies are kept. For extra safety, <b>Download</b> a copy to a USB stick or another computer.</p>
+                        </div>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+                            <button id="backupNow" type="button" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none whitespace-nowrap">Back up now</button>
+                            <label class="flex h-10 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-white/10 px-4 text-sm text-slate-300 hover:border-white/30 hover:text-white transition-all">
+                                <span class="material-symbols-outlined text-base">upload_file</span> Add a backup file
+                                <input id="backupFile" type="file" accept=".db" class="sr-only">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-white/5"></div>
+
+                    <div>
+                        <h4 class="font-semibold text-white">Restore</h4>
+                        <p class="mt-1 text-sm text-slate-400">Puts LanWatch back the way it was when the copy was made. Your current data is backed up first, so a restore can be undone. Afterwards, unlock Settings with the admin password <b>from that backup</b>.</p>
+                        <div id="backupList" class="mt-3 flex flex-col gap-2"><p class="text-sm text-slate-500">Loading…</p></div>
+                        <p id="backupFolder" class="mt-3 break-all font-mono text-xs text-slate-500"></p>
+                    </div>
+                </div>
+
+                <div class="border-t border-white/10 bg-[#090D16]/40 px-6 py-4">
+                    <p id="backupMsg" class="min-h-[1.25rem] font-mono text-xs" role="status" aria-live="polite"></p>
+                </div>
+            </section>
+
+            <!-- ===== SECTION: ACCOUNT =====
+                 "Create/Update account" -> settings.js saveAccount() -> POST/PUT /api/account/ -->
+            <section class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-2xl">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#8B5CF6]/50 via-[#00F2FE]/30 to-transparent"></div>
+                <div class="flex flex-col gap-3 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="material-symbols-outlined text-[#8B5CF6]">manage_accounts</span>
+                        <div>
+                            <h3 class="font-bold tracking-wide text-white">Account</h3>
+                            <p id="accountSubtitle" class="font-mono text-xs text-slate-400">Change your username or password</p>
+                        </div>
+                    </div>
+                    <p id="accountInfo" class="font-mono text-xs text-slate-400">Loading…</p>
+                </div>
+
+                <div id="accountBody" class="p-6">
+                    <div id="accountLocked" class="hidden rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10 px-4 py-3 font-mono text-xs text-[#FBBF24]" role="alert"></div>
+
+                    <div id="accountForm" class="grid gap-5 lg:grid-cols-2">
+                        <div>
+                            <label for="accUsername" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Username</label>
+                            <input id="accUsername" type="text" autocomplete="username" maxlength="32" spellcheck="false" class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50">
+                            <p class="mt-2 font-mono text-xs text-slate-500">3 to 32 characters: letters, numbers, dots, dashes, underscores.</p>
+                        </div>
+                        <div class="hidden lg:block"></div>
+
+                        <div>
+                            <label for="accNewPassword" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">New password</label>
+                            <input id="accNewPassword" type="password" autocomplete="new-password" maxlength="128" class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50">
+                            <p class="mt-2 font-mono text-xs text-slate-500">Leave empty to keep your current password. At least 8 characters.</p>
+                        </div>
+                        <div>
+                            <label for="accConfirmPassword" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Confirm new password</label>
+                            <input id="accConfirmPassword" type="password" autocomplete="new-password" maxlength="128" class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50">
+                        </div>
+
+                        <div id="accCurrentWrap" class="lg:col-span-2 border-t border-white/5 pt-5">
+                            <label for="accCurrentPassword" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Current password</label>
+                            <input id="accCurrentPassword" type="password" autocomplete="current-password" maxlength="128" class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2.5 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] disabled:cursor-not-allowed disabled:opacity-50 lg:w-1/2">
+                            <p class="mt-2 font-mono text-xs text-slate-500">Required to save any account change.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-white/10 bg-[#090D16]/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p id="accountMsg" class="min-h-[1.25rem] font-mono text-xs" role="status" aria-live="polite"></p>
+                    <button id="accountSave" type="button" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none whitespace-nowrap" disabled>Update account</button>
+                </div>
+            </section>
+        </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/phone_settings.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/backups.js') }}"></script>
+{% endblock %}

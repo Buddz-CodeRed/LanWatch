@@ -1,0 +1,83 @@
+{# ==========================================================================
+   FILE: app/templates/devices.html  -  DEVICES PAGE
+   --------------------------------------------------------------------------
+   Opened at: /devices  (or /devices?id=<device_id>)  (route in app/__init__.py)
+   Logic:     static/js/utils.js + static/js/devices.js
+   Layout:    extends templates/base.html (head, sidebar, header frame,
+              phone menu). This file only fills in its blocks.
+   This file only describes WHAT is on the page. The JavaScript finds the
+   elements by their id="..." and fills them with data from the API.
+
+   Sections                        id(s) the JavaScript fills
+     Device picker                 deviceSelect
+     Device details panel          deviceDetail   (devices.js renderDetail)
+     Network summary panel         reportSummary  (devices.js renderReport)
+
+   (This whole block is a template comment: Flask removes it before
+    sending the page, so it never reaches the browser.)
+   ========================================================================== #}
+{% extends "base.html" %}
+{% set active_page = "devices" %}
+{% block title %}Devices{% endblock %}
+
+{% block header %}
+            <div class="min-w-0 flex-1">
+                <h2 class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">Home Network Monitoring System</h2>
+                <p class="hidden truncate font-mono text-xs text-slate-400 sm:block">Real-time LAN host discovery & anomaly detection</p>
+            </div>
+{% endblock %}
+
+{% block content %}
+        <section class="mx-auto flex max-w-[1440px] flex-col gap-6 p-5 md:p-8">
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <h1 class="text-2xl font-bold tracking-tight text-white">Devices</h1>
+                <a href="/" class="font-mono text-xs text-slate-400 hover:text-[#00F2FE]">← Back to dashboard</a>
+            </div>
+
+            <!-- ===== SECTION: DEVICE DETAILS =====
+                 Trigger: pick a device in deviceSelect -> devices.js renderDetail() -->
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex flex-col gap-3 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#00F2FE]">devices</span>
+                        <div>
+                            <h3 class="font-bold text-white tracking-wide">Device details</h3>
+                            <p class="text-xs text-[#849495]">Everything LanWatch knows about one device.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="deviceSelect" class="mb-1 block text-xs text-slate-400">Choose a device</label>
+                        <select id="deviceSelect"
+                            class="w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-2 font-mono text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] sm:w-72">
+                        </select>
+                    </div>
+                </div>
+                <div id="deviceDetail" class="p-5">
+                    <p class="py-8 text-center font-mono text-sm text-slate-400">Loading device information…</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: NETWORK SUMMARY (devices.js renderReport) ===== -->
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex items-center gap-2 border-b border-white/10 p-5">
+                    <span class="material-symbols-outlined text-[#8B5CF6]">summarize</span>
+                    <div>
+                        <h3 class="font-bold text-white tracking-wide">Network report summary</h3>
+                        <p class="text-xs text-[#849495]">A quick overview of everything on your network.</p>
+                    </div>
+                </div>
+                <div id="reportSummary" class="p-5">
+                    <p class="py-8 text-center font-mono text-sm text-slate-400">Building report…</p>
+                </div>
+            </div>
+
+        </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ai_explain.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin_lock.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/devices.js') }}"></script>
+{% endblock %}

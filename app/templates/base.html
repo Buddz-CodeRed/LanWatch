@@ -1,0 +1,146 @@
+{# ==========================================================================
+   FILE: app/templates/base.html  -  SHARED PAGE LAYOUT (every page uses it)
+   --------------------------------------------------------------------------
+   Everything that is the same on every page lives here ONCE:
+     - the <head>: styles (all served from LanWatch itself, so pages work
+       with no internet), the scan indicator and the phone menu scripts
+     - the sidebar with links to every page (the current page highlighted)
+     - the top header, with the phone menu button (☰) on small screens
+   Each page "extends" this file and fills in the blocks below.
+
+   A page looks like:
+       {% extends "base.html" %}
+       {% set active_page = "alerts" %}          <- which sidebar link to highlight
+       {% block title %}Security Alerts{% endblock %}
+       {% block header %} ...title + subtitle (+ extras)... {% endblock %}
+       {% block content %} ...the page itself... {% endblock %}
+       {% block scripts %} ...<script> tags... {% endblock %}
+   Optional: {% block head %} for extra <style>/<link> tags.
+
+   On a signed-in phone or tablet (phone_session, from app/__init__.py) the
+   menu also has "Sign out of this phone" (POST /phone-logout).
+
+   On phones and small tablets (below 768 px wide) the sidebar is hidden
+   off-screen and slides in when ☰ is pressed (static/js/nav.js).
+   ========================================================================== #}
+{%- set nav_items = [
+    ("dashboard", "/",              "dashboard",         "Dashboard"),
+    ("devices",   "/devices",       "devices",           "Devices"),
+    ("alerts",    "/alerts",        "warning",           "Security Alerts"),
+    ("advice",    "/advice",        "health_and_safety", "Security Advice"),
+    ("scans",     "/scans-history", "history",           "Scan History"),
+    ("reports",   "/reports",       "report",            "Reports"),
+    ("settings",  "/settings",      "manufacturing",     "System Settings"),
+] -%}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090D16">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <title>LanWatch - {% block title %}{% endblock %}</title>
+
+    <!-- Styles: all built into LanWatch, nothing loaded from the internet (Step 27)
+           tailwind.css - every Tailwind class the pages use (built by build_css.ps1)
+           fonts.css    - Inter, JetBrains Mono and the Material Symbols icons
+           style.css    - LanWatch's own extra rules -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Shared scripts: the phone menu, and the running-scan indicator in the header -->
+    <script defer src="{{ url_for('static', filename='js/nav.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/scan_indicator.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/mobile_tables.js') }}"></script>
+    {% block head %}{% endblock %}
+</head>
+
+<body class="min-h-screen bg-[#090D16] text-[#dfe2ef] font-sans selection:bg-[#00F2FE]/30 selection:text-[#00F2FE] antialiased">
+
+    <!-- Ambient background glow -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden print:hidden">
+        <div class="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-[#00F2FE]/5 blur-[120px]"></div>
+        <div class="absolute top-1/3 -right-20 h-[600px] w-[600px] rounded-full bg-[#8B5CF6]/5 blur-[140px]"></div>
+    </div>
+
+    <main class="relative z-10 min-h-screen md:ml-64">
+
+        <!-- Phone menu: dark backdrop behind the open sidebar (nav.js).
+             It must sit inside <main>, like the sidebar: <main> forms its own
+             layer, so a backdrop outside it would cover the menu itself. -->
+        <div id="navBackdrop" class="fixed inset-0 z-[49] hidden bg-black/60 backdrop-blur-sm md:hidden" aria-hidden="true"></div>
+
+        <!-- ===== SHARED LAYOUT: SIDEBAR =====
+             Always visible from 768 px wide; on smaller screens it slides in from
+             the left when ☰ is pressed. The link for `active_page` is highlighted. -->
+        <aside id="sidebar" aria-label="Main menu"
+            class="fixed left-0 top-0 z-50 flex h-[100dvh] w-64 -translate-x-full flex-col overflow-y-auto border-r border-white/10 bg-[#0F172A]/95 p-5 backdrop-blur-xl transition-transform duration-200 md:translate-x-0 md:bg-[#0F172A]/80 print:hidden">
+            <div class="mb-6 flex items-center gap-3 border-b border-white/10 px-2 py-3">
+                <div class="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#00F2FE] to-[#8B5CF6] p-0.5 shadow-[0_0_15px_rgba(0,242,254,0.4)]">
+                    <div class="flex h-full w-full items-center justify-center rounded-[7px] bg-[#090D16]">
+                        <span class="material-symbols-outlined text-xl text-[#00F2FE]">radar</span>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <h1 class="font-bold text-lg tracking-wider text-white">LANWATCH</h1>
+                    <p class="font-mono text-[10px] uppercase tracking-widest text-[#00F2FE]/80">MrK1 v0.01</p>
+                </div>
+                <!-- close button (phone menu only) -->
+                <button id="navClose" type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white md:hidden" aria-label="Close menu">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <nav class="flex-1 space-y-1.5 text-sm font-medium">
+                {%- for key, href, icon, label in nav_items %}
+                {%- if key == active_page %}
+                <a href="{{ href }}" aria-current="page" class="flex items-center gap-3 rounded-lg border border-[#00F2FE]/30 bg-[#00F2FE]/10 px-4 py-3 text-[#00F2FE] shadow-[0_0_12px_rgba(0,242,254,0.15)]">
+                {%- else %}
+                <a href="{{ href }}" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 transition-all hover:bg-white/5 hover:text-white">
+                {%- endif %}
+                    <span class="material-symbols-outlined text-lg">{{ icon }}</span> {{ label }}
+                </a>
+                {%- endfor %}
+                {%- if phone_session %}
+                <!-- on a signed-in phone or tablet only (app/phone_access.py) -->
+                <form method="post" action="/phone-logout" class="border-t border-white/10 pt-2">
+                    <button type="submit" class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-slate-400 transition-all hover:bg-white/5 hover:text-white">
+                        <span class="material-symbols-outlined text-lg">logout</span> Sign out of this phone
+                    </button>
+                </form>
+                {%- endif %}
+            </nav>
+
+            <div class="mt-6 rounded-lg border border-white/10 bg-[#090D16]/60 p-3.5 backdrop-blur-md">
+                <div class="flex items-center gap-2">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#10B981] opacity-75"></span>
+                        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#10B981]"></span>
+                    </span>
+                    <span class="font-mono text-xs text-slate-300">Engine Status: Online</span>
+                </div>
+                <p class="mt-1 font-mono text-[11px] text-slate-500">Date: <span id="datetime"></span></p>
+            </div>
+        </aside>
+
+        <!-- ===== SHARED LAYOUT: TOP HEADER =====
+             ☰ (phones only) + the page's own title and extras (block header) -->
+        <header class="sticky top-0 z-40 flex min-h-16 items-center justify-between gap-3 border-b border-white/10 bg-[#090D16]/80 px-4 py-2 backdrop-blur-md sm:px-5 md:px-8 print:hidden">
+            <button id="navOpen" type="button" class="-ml-1 shrink-0 rounded-lg p-2 text-slate-300 hover:bg-white/5 hover:text-white md:hidden"
+                aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            {% block header %}{% endblock %}
+        </header>
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+    <script>
+        // today's date in the sidebar
+        document.getElementById("datetime").textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>

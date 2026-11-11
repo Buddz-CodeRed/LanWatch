@@ -1,0 +1,253 @@
+{
+  "_about": "LanWatch router knowledge base: (1) 'checks' is the router hardening checklist shown on the Advice page; (2) 'brands' says how to find each check on common router brands. A brand is recognised from the router's MAC maker (vendor_match, lower-case pieces of the maker name) or its name (name_match). Menu names change between models and software versions, so every 'where' hint is a starting point, not a promise. ADVICE ONLY: LanWatch never logs in to the router or changes it. Used by app/services/router_advice.py.",
+
+  "checks": {
+    "admin_password": {
+      "title": "Change the router's admin password",
+      "difficulty": "easy",
+      "why": "The router's settings page controls your whole network and can be opened from every device at home. Factory passwords (often 'admin' or the one on the sticker) are widely known.",
+      "steps": [
+        "Open the router's settings page or app (see 'How to open it' above).",
+        "Find 'Administrator', 'Admin password', 'Management' or 'System > Password'.",
+        "Choose a long password you don't use anywhere else and save it somewhere safe, such as a password manager.",
+        "This is NOT your Wi-Fi password: it only protects the settings page."
+      ]
+    },
+    "firmware": {
+      "title": "Keep the router's software (firmware) up to date",
+      "difficulty": "easy",
+      "why": "Router makers fix security holes through firmware updates. An out-of-date router is one of the most common ways home networks are attacked.",
+      "steps": [
+        "Open the router's settings page or app and find 'Firmware', 'Software update', 'Update' or 'System Tools'.",
+        "Check for an update and install it. Don't switch the router off while it updates.",
+        "Turn on automatic updates if the router offers them.",
+        "If your internet provider supplied the router, it usually updates it for you. If the router is more than about 5 years old and gets no more updates, ask your provider about a replacement."
+      ]
+    },
+    "wifi_security": {
+      "title": "Use WPA2 or WPA3 and a strong Wi-Fi password",
+      "difficulty": "easy",
+      "why": "Older Wi-Fi security (WEP, WPA, or 'Open') can be broken in minutes. A short Wi-Fi password can be guessed by anyone within range of your house.",
+      "steps": [
+        "Open the router's Wi-Fi or Wireless settings.",
+        "Set the security to 'WPA3', 'WPA2/WPA3' or 'WPA2-PSK (AES)'. Never 'Open', 'WEP' or 'WPA' on its own.",
+        "Use a Wi-Fi password of at least 12 characters (a few random words work well).",
+        "If you change the password, every device will need the new one, so do it when you have time to reconnect them."
+      ]
+    },
+    "wps": {
+      "title": "Turn off WPS (the push-button / PIN connection)",
+      "difficulty": "easy",
+      "why": "WPS lets devices join without the Wi-Fi password. Its PIN method in particular has well-known weaknesses that let attackers get in.",
+      "steps": [
+        "Open the router's Wi-Fi or Wireless settings and look for 'WPS'.",
+        "Switch WPS off (or at least the 'PIN' method).",
+        "You can still connect new devices by typing the Wi-Fi password."
+      ]
+    },
+    "upnp": {
+      "title": "Turn off UPnP if you don't need it",
+      "difficulty": "medium",
+      "why": "UPnP lets any device at home open doors (ports) through your router to the internet without asking. Malware on one device can use it to expose others.",
+      "steps": [
+        "Open the router's settings and look for 'UPnP' (often under 'Advanced', 'NAT', 'Network' or 'Home network').",
+        "Switch it off.",
+        "If an online game or video call stops working afterwards, you can switch it back on: it's a trade-off between convenience and safety."
+      ]
+    },
+    "remote_management": {
+      "title": "Turn off remote management from the internet",
+      "difficulty": "medium",
+      "why": "Remote management lets the router's settings page be opened from anywhere on the internet, where attackers constantly try passwords.",
+      "steps": [
+        "Open the router's settings and look for 'Remote management', 'Remote access', 'Web access from WAN' or 'Access control'.",
+        "Switch it off, unless you really need to change router settings while away from home.",
+        "Internet providers sometimes keep their own remote access for support (often called TR-069). That's normal and usually can't be switched off."
+      ]
+    },
+    "guest_network": {
+      "title": "Use a guest network for visitors and smart gadgets",
+      "difficulty": "easy",
+      "why": "Devices on the guest network can use the internet but can't see your computers and phones, so a visitor's infected phone or a poorly secured smart plug can't reach them.",
+      "steps": [
+        "Open the router's Wi-Fi settings and look for 'Guest network' or 'Guest Wi-Fi'.",
+        "Switch it on with its own password, and make sure 'Allow guests to see each other / access the local network' is off.",
+        "Give that password to visitors, and connect smart-home gadgets (plugs, bulbs, TVs) to it if they still work there."
+      ]
+    },
+    "port_forwarding": {
+      "title": "Review port forwarding rules",
+      "difficulty": "medium",
+      "why": "Each port forwarding rule makes a device at home reachable from the whole internet. Old rules for games, cameras or servers you no longer use are open doors.",
+      "steps": [
+        "Open the router's settings and look for 'Port forwarding', 'Virtual servers', 'NAT' or 'Applications'.",
+        "Delete any rule you don't recognise or no longer need.",
+        "Also check for 'DMZ' and make sure it is off: it forwards everything to one device."
+      ]
+    }
+  },
+
+  "brands": {
+    "arcadyan": {
+      "name": "Arcadyan",
+      "vendor_match": ["arcadyan"],
+      "name_match": ["vrv95"],
+      "open": "Supplied by internet providers (in NZ, the Spark Smart Modem). Type the address on its label, usually http://192.168.1.254, into a web browser.",
+      "app": null,
+      "where": {}
+    },
+    "huawei": {
+      "name": "Huawei",
+      "vendor_match": ["huawei"],
+      "name_match": ["hg659", "hg630", "b315", "b618"],
+      "open": "Usually supplied by an internet provider. Type the address on its label (often http://192.168.1.254 or http://192.168.1.1) into a web browser.",
+      "app": null,
+      "where": {}
+    },
+    "tp_link": {
+      "name": "TP-Link",
+      "vendor_match": ["tp-link", "tp link", "tplink"],
+      "name_match": ["archer", "deco"],
+      "open": "Home models: http://tplinkwifi.net or http://192.168.0.1 in a web browser, or the TP-Link Tether app. Deco mesh: the Deco app. Provider-supplied models (e.g. 2degrees, Contact) may use the Aginet or TP-Link app instead.",
+      "app": "Tether, Deco or Aginet app",
+      "where": {
+        "firmware": "On most Archer models: Advanced > System Tools > Firmware Upgrade (or System > Firmware Update). Deco: More > Update Deco.",
+        "upnp": "On most Archer models: Advanced > NAT Forwarding > UPnP. Deco: More > Advanced > UPnP.",
+        "wps": "On most Archer models: Advanced > Wireless > WPS.",
+        "remote_management": "On most Archer models: Advanced > System Tools > Administration > Remote Management.",
+        "port_forwarding": "On most Archer models: Advanced > NAT Forwarding > Virtual Servers."
+      }
+    },
+    "netcomm": {
+      "name": "NetComm",
+      "vendor_match": ["netcomm", "casa systems"],
+      "name_match": ["nf18", "nf20", "nf4v"],
+      "open": "Supplied by NZ providers such as Slingshot, Orcon and Contact. Type the address on its label into a web browser (Contact's NF18ACV uses http://192.168.20.1).",
+      "app": null,
+      "where": {
+        "admin_password": "NetComm modems have several logins (for example 'admin' and 'support'). Change the passwords of both 'admin' and 'support'; Slingshot recommends leaving the others alone."
+      }
+    },
+    "nokia": {
+      "name": "Nokia",
+      "vendor_match": ["nokia"],
+      "name_match": ["fastmile", "beacon"],
+      "open": "Most settings are in the Nokia WiFi app. The web page's 'admin' password is on the sticker underneath the modem.",
+      "app": "Nokia WiFi app",
+      "where": {
+        "admin_password": "In the web page: Maintenance > Password (on FastMile 5G models)."
+      }
+    },
+    "avm": {
+      "name": "AVM FRITZ!Box",
+      "vendor_match": ["avm audiovisuelles", "avm gmbh", "avm computersysteme"],
+      "name_match": ["fritz"],
+      "open": "Type http://fritz.box into a web browser. The FRITZ!Box password is on the label underneath.",
+      "app": "MyFRITZ!App",
+      "where": {
+        "firmware": "System > Update (you can also switch on automatic updates there).",
+        "upnp": "Home Network > Network > Network Settings: untick 'Permit access for applications' / 'Transmit status information over UPnP'.",
+        "wps": "Wi-Fi > Security > WPS Quick Connection.",
+        "remote_management": "Internet > Permit Access (or MyFRITZ!): make sure internet access to the FRITZ!Box is off.",
+        "port_forwarding": "Internet > Permit Access > Port Sharing."
+      }
+    },
+    "netgear": {
+      "name": "NETGEAR",
+      "vendor_match": ["netgear"],
+      "name_match": ["netgear", "nighthawk", "orbi"],
+      "open": "Type http://routerlogin.net into a web browser, or use the Nighthawk (or Orbi) app.",
+      "app": "Nighthawk or Orbi app",
+      "where": {
+        "firmware": "ADVANCED > Administration > Router Update (or Firmware Update).",
+        "upnp": "ADVANCED > Advanced Setup > UPnP.",
+        "remote_management": "ADVANCED > Advanced Setup > Remote Management.",
+        "port_forwarding": "ADVANCED > Advanced Setup > Port Forwarding / Port Triggering."
+      }
+    },
+    "asus": {
+      "name": "ASUS",
+      "vendor_match": ["asustek", "asus"],
+      "name_match": ["rt-", "asus"],
+      "open": "Type http://router.asus.com into a web browser, or use the ASUS Router app.",
+      "app": "ASUS Router app",
+      "where": {
+        "firmware": "Administration > Firmware Upgrade.",
+        "upnp": "WAN > Internet Connection > Enable UPnP.",
+        "wps": "Wireless > WPS.",
+        "remote_management": "Administration > System > Enable Web Access from WAN (set to No).",
+        "port_forwarding": "WAN > Virtual Server / Port Forwarding."
+      }
+    },
+    "d_link": {
+      "name": "D-Link",
+      "vendor_match": ["d-link", "dlink"],
+      "name_match": ["dlink", "d-link", "dir-"],
+      "open": "Usually http://192.168.0.1 in a web browser, or the D-Link app (AQUILA PRO models).",
+      "app": "D-Link app",
+      "where": {}
+    },
+    "linksys": {
+      "name": "Linksys",
+      "vendor_match": ["linksys", "belkin"],
+      "name_match": ["linksys", "velop"],
+      "open": "Type http://myrouter.local into a web browser, or use the Linksys app.",
+      "app": "Linksys app",
+      "where": {}
+    },
+    "google": {
+      "name": "Google Nest Wifi",
+      "vendor_match": ["google"],
+      "name_match": ["google-wifi", "nest-wifi", "nestwifi"],
+      "open": "Managed only through the Google Home app. Its software updates automatically.",
+      "app": "Google Home app",
+      "where": {
+        "admin_password": "There's no separate admin password: the router is protected by your Google account, so use a strong password and 2-step verification on it.",
+        "firmware": "Updates are automatic; nothing to do."
+      }
+    },
+    "eero": {
+      "name": "eero",
+      "vendor_match": ["eero"],
+      "name_match": ["eero"],
+      "open": "Managed only through the eero app. Its software updates automatically.",
+      "app": "eero app",
+      "where": {
+        "admin_password": "There's no separate admin password: the router is protected by your eero (Amazon) account, so use a strong password and 2-step verification on it.",
+        "firmware": "Updates are automatic; check the update time in the eero app under Settings > Software updates."
+      }
+    },
+    "ubiquiti": {
+      "name": "Ubiquiti UniFi",
+      "vendor_match": ["ubiquiti"],
+      "name_match": ["unifi", "udm", "ubnt"],
+      "open": "Managed through the UniFi Network app or its web console.",
+      "app": "UniFi Network app",
+      "where": {}
+    },
+    "technicolor": {
+      "name": "Technicolor / Vantiva",
+      "vendor_match": ["technicolor", "vantiva"],
+      "name_match": ["technicolor", "tg7", "dja0"],
+      "open": "Usually supplied by an internet provider. Type the address on its label (often http://192.168.1.1) into a web browser.",
+      "app": null,
+      "where": {}
+    },
+    "sagemcom": {
+      "name": "Sagemcom",
+      "vendor_match": ["sagemcom"],
+      "name_match": ["sagemcom"],
+      "open": "Usually supplied by an internet provider. Type the address on its label into a web browser.",
+      "app": null,
+      "where": {}
+    },
+    "zte": {
+      "name": "ZTE",
+      "vendor_match": ["zte"],
+      "name_match": ["zte"],
+      "open": "Usually supplied by an internet provider. Type the address on its label into a web browser.",
+      "app": null,
+      "where": {}
+    }
+  }
+}

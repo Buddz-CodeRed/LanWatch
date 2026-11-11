@@ -1,0 +1,167 @@
+{# ==========================================================================
+   FILE: app/templates/scans_history.html  -  SCAN HISTORY PAGE
+   --------------------------------------------------------------------------
+   Opened at: /scans-history  (route in app/__init__.py)
+   Logic:     static/js/scans_history.js
+   Layout:    extends templates/base.html (head, sidebar, header frame,
+              phone menu). This file only fills in its blocks.
+   This file only describes WHAT is on the page. The JavaScript finds the
+   elements by their id="..." and fills them with data from the API.
+
+   Sections                        id(s) the JavaScript fills
+     Summary cards                 statTotal, statSuccess, statFailed, statAvg, statPeak
+     Toolbar                       searchInput, statusFilter, sortSelect, refreshBtn, exportBtn
+     History table                 scanHistoryBody, scanCount
+     Page controls                 pageSize, prevPage, nextPage, pageNum, pageInfo
+
+   (This whole block is a template comment: Flask removes it before
+    sending the page, so it never reaches the browser.)
+   ========================================================================== #}
+{% extends "base.html" %}
+{% set active_page = "scans" %}
+{% block title %}Scan History{% endblock %}
+
+{% block header %}
+            <div class="min-w-0 flex-1">
+                <h2 class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">Home Network Monitoring System</h2>
+                <p class="hidden truncate font-mono text-xs text-slate-400 sm:block">Every scan LanWatch has run on your network</p>
+            </div>
+{% endblock %}
+
+{% block content %}
+        <section class="mx-auto flex max-w-[1440px] flex-col gap-6 p-5 md:p-8">
+
+            <!-- ===== SECTION: PAGE TITLE + LAST REFRESHED ===== -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold tracking-tight text-white">Scan History</h1>
+                    <span id="totalBadge" class="rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 px-3 py-0.5 font-mono text-xs text-[#C4ABFF]">0 scans</span>
+                </div>
+                <div class="font-mono text-xs text-slate-400">
+                    Last refreshed: <span id="refreshedAt" class="font-semibold text-[#00F2FE]">—</span>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: SUMMARY CARDS (scans_history.js renderStats) ===== -->
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 hover:border-[#00F2FE]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Total Scans</span>
+                        <span class="material-symbols-outlined text-lg text-[#00F2FE]">manage_search</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-white" id="statTotal">0</p>
+                    <p class="mt-2 border-t border-white/5 pt-2 font-mono text-xs text-slate-400">Since LanWatch was installed</p>
+                </div>
+
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 hover:border-[#10B981]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Success Rate</span>
+                        <span class="material-symbols-outlined text-lg text-[#10B981]">check_circle</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-[#34D399]" id="statSuccess">—</p>
+                    <p class="mt-2 border-t border-white/5 pt-2 font-mono text-xs text-slate-400"><span id="statFailed">0</span> failed or cancelled</p>
+                </div>
+
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 hover:border-[#8B5CF6]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Average Duration</span>
+                        <span class="material-symbols-outlined text-lg text-[#8B5CF6]">timer</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-[#C4ABFF]" id="statAvg">—</p>
+                    <p class="mt-2 border-t border-white/5 pt-2 font-mono text-xs text-slate-400">Completed scans only</p>
+                </div>
+
+                <div class="rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-5 hover:border-[#00F2FE]/40 transition-all">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="font-mono text-xs uppercase tracking-wider">Most Devices Found</span>
+                        <span class="material-symbols-outlined text-lg text-[#00F2FE]">devices</span>
+                    </div>
+                    <p class="font-mono text-3xl font-bold text-white" id="statPeak">—</p>
+                    <p class="mt-2 border-t border-white/5 pt-2 font-mono text-xs text-slate-400">In a single scan</p>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: SEARCH TOOLBAR + HISTORY TABLE (scans_history.js renderTable) ===== -->
+            <div class="overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex flex-col gap-4 border-b border-white/10 p-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[#8B5CF6]">history</span>
+                        <h3 class="font-bold text-white tracking-wide">Scan History</h3>
+                        <span id="scanCount" class="ml-2 font-mono rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-[#C4ABFF]">0 Scans</span>
+                    </div>
+
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div>
+                            <label for="searchInput" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Search</label>
+                            <input id="searchInput" type="text" placeholder="Subnet, ID or summary"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-3 py-2 text-sm text-[#00F2FE] placeholder-slate-600 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] sm:w-56">
+                        </div>
+                        <div>
+                            <label for="statusFilter" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Status</label>
+                            <select id="statusFilter"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-3 py-2 text-sm text-slate-200 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] sm:w-40">
+                                <option value="all">All</option>
+                                <option value="completed">Completed</option>
+                                <option value="running">Running</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sortSelect" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Sort</label>
+                            <select id="sortSelect"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-3 py-2 text-sm text-slate-200 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] sm:w-44">
+                                <option value="newest">Newest first</option>
+                                <option value="oldest">Oldest first</option>
+                                <option value="longest">Longest duration</option>
+                                <option value="devices">Most devices</option>
+                            </select>
+                        </div>
+                        <button id="refreshBtn" class="h-10 rounded-lg border border-white/10 px-4 text-sm text-slate-300 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">refresh</span> Refresh
+                        </button>
+                        <button id="exportBtn" class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-4 text-sm font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">download</span> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="mobile-cards w-full text-left text-sm">
+                        <thead class="border-b border-white/10 bg-[#090D16]/60 font-mono text-xs uppercase tracking-wider text-slate-400">
+                            <tr>
+                                <th class="px-5 py-3.5">ID</th>
+                                <th class="px-5 py-3.5">Subnet</th>
+                                <th class="px-5 py-3.5">Status</th>
+                                <th class="px-5 py-3.5">Duration</th>
+                                <th class="px-5 py-3.5">Result Summary</th>
+                                <th class="px-5 py-3.5">Start Time</th>
+                                <th class="px-5 py-3.5">End Time</th>
+                                <th class="px-5 py-3.5"><span class="sr-only">Details</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scanHistoryBody" class="divide-y divide-white/5">
+                            <tr><td colspan="8" class="px-5 py-10 text-center font-mono text-slate-400">Loading scan history…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Page controls (rows per page, ← →) -->
+                <div class="flex flex-col items-center justify-between gap-3 border-t border-white/10 p-4 sm:flex-row">
+                    <p class="font-mono text-xs text-slate-400" id="pageInfo">Showing 0–0 of 0</p>
+                    <div class="flex items-center gap-2">
+                        <label for="pageSize" class="font-mono text-xs text-slate-400">Rows</label>
+                        <select id="pageSize" class="font-mono rounded-lg border border-white/10 bg-[#090D16] px-2 py-1 text-xs text-slate-200 focus:border-[#00F2FE] focus:outline-none">
+                            <option>10</option><option selected>25</option><option>50</option><option>100</option>
+                        </select>
+                        <button id="prevPage" class="rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-[#849495] hover:text-[#00F2FE] disabled:opacity-20 disabled:cursor-not-allowed">←</button>
+                        <span id="pageNum" class="font-mono text-xs text-slate-300">1 / 1</span>
+                        <button id="nextPage" class="rounded-lg border border-white/10 px-3 py-1 font-mono text-xs text-[#849495] hover:text-[#00F2FE] disabled:opacity-20 disabled:cursor-not-allowed">→</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/scans_history.js') }}"></script>
+{% endblock %}

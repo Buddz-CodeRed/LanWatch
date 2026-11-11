@@ -1,0 +1,57 @@
+{# ==========================================================================
+   FILE: app/templates/phone_blocked.html  -  WHY THIS PHONE CAN'T OPEN LANWATCH
+   --------------------------------------------------------------------------
+   Shown by app/phone_access.py phone_gate() to another device when:
+     reason "off"           phone access is switched off in Settings
+     reason "unrecognised"  "recognised devices only" is on and LanWatch
+                            doesn't know this device or hasn't been told it's yours
+     reason "setup"         the first-run set-up only works on the computer
+   Values: reason, ip (this device's address), name
+   The "unrecognised" page reloads itself every 5 seconds until it's allowed.
+   ========================================================================== #}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090D16">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    {% if reason == "unrecognised" %}<meta http-equiv="refresh" content="5">{% endif %}
+    <title>LanWatch - Not available on this device</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+</head>
+<body class="flex min-h-[100dvh] items-center justify-center bg-[#090D16] p-4 font-sans text-[#dfe2ef] antialiased">
+    <div class="w-full max-w-md rounded-xl border border-white/10 bg-[#0F172A] p-6 shadow-2xl">
+        <div class="mb-4 flex items-center gap-3">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F59E0B]/10 text-[#FBBF24]">
+                <span class="material-symbols-outlined">{{ "phonelink_lock" if reason == "unrecognised" else "phonelink_off" }}</span>
+            </span>
+            <h1 class="text-lg font-bold text-white">
+                {%- if reason == "unrecognised" %}This device isn't recognised yet
+                {%- elif reason == "setup" %}Set-up happens on the computer
+                {%- else %}Phone access is switched off{% endif -%}
+            </h1>
+        </div>
+
+        {% if reason == "unrecognised" %}
+        <p class="text-sm text-slate-300">For safety, LanWatch only opens on phones and tablets you've said are yours. This one has asked to be let in.</p>
+        <p class="mt-3 text-sm font-semibold text-white">On the computer LanWatch runs on:</p>
+        <ol class="mt-1 list-decimal space-y-1 pl-5 text-sm text-slate-300">
+            <li>Open <b>System Settings</b> and unlock it with the admin password.</li>
+            <li>Under <b>Phones and tablets</b>, find <b>Waiting to be let in</b> and click <b>Allow</b> next to <span class="font-mono text-[#00F2FE]">{{ ip }}</span>{% if name and ip not in name %} ({{ name }}){% endif %}.</li>
+        </ol>
+        <p class="mt-3 flex items-center gap-2 text-xs text-slate-400">
+            <span class="material-symbols-outlined animate-spin text-base text-[#00F2FE]">progress_activity</span>
+            This page checks again every few seconds and moves on to the sign-in page by itself.
+        </p>
+        {% elif reason == "setup" %}
+        <p class="text-sm text-slate-300">The admin account can only be created on the computer LanWatch is installed on.</p>
+        {% else %}
+        <p class="text-sm text-slate-300">To use LanWatch on this phone or tablet, open LanWatch on its computer, go to <b>System Settings &gt; Phones and tablets</b> and switch it on.</p>
+        {% endif %}
+
+        <p class="mt-4 font-mono text-xs text-slate-500">This device's address: {{ ip }}</p>
+    </div>
+</body>
+</html>

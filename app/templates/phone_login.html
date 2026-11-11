@@ -1,0 +1,54 @@
+{# ==========================================================================
+   FILE: app/templates/phone_login.html  -  SIGN IN ON A PHONE OR TABLET
+   --------------------------------------------------------------------------
+   Opened at: /phone-login  (routes/phone.py), only ever on ANOTHER device:
+   app/phone_access.py sends phones here until they have signed in.
+   Logic:     static/js/phone_login.js -> POST /api/phone/login
+   A page of its own (no menu): nothing else may be shown before signing in.
+   ========================================================================== #}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090D16">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <title>LanWatch - Sign in</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fonts/fonts.css') }}">
+</head>
+<body class="flex min-h-[100dvh] items-center justify-center bg-[#090D16] p-4 font-sans text-[#dfe2ef] antialiased">
+
+    <!-- ===== SECTION: SIGN-IN FORM =====
+         Trigger: "Sign in" -> phone_login.js signIn() -> POST /api/phone/login -->
+    <form id="phoneLoginForm" data-next="{{ next }}" class="w-full max-w-sm rounded-xl border border-white/10 bg-[#0F172A] p-6 shadow-2xl">
+        <div class="mb-5 flex items-center gap-3">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#00F2FE] to-[#8B5CF6] p-0.5">
+                <span class="flex h-full w-full items-center justify-center rounded-[10px] bg-[#090D16]">
+                    <span class="material-symbols-outlined text-[#00F2FE]">radar</span>
+                </span>
+            </span>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider text-white">LANWATCH</h1>
+                <p class="text-sm text-slate-400">Sign in with the admin account</p>
+            </div>
+        </div>
+
+        <label for="phoneUsername" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Username</label>
+        <input id="phoneUsername" type="text" autocomplete="username" autocapitalize="none" maxlength="32" spellcheck="false" required
+            class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-3 text-base text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE]">
+
+        <label for="phonePassword" class="mb-1 mt-4 block font-mono text-xs uppercase tracking-wider text-slate-400">Password</label>
+        <input id="phonePassword" type="password" autocomplete="current-password" maxlength="128" required
+            class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-4 py-3 text-base text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE]">
+
+        <p id="phoneLoginMsg" class="mt-3 min-h-[1.25rem] font-mono text-xs text-[#FFB4AB]" role="status" aria-live="polite"></p>
+        <button id="phoneLoginSubmit" type="submit"
+            class="mt-1 h-12 w-full rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] font-bold text-[#090D16] transition-all active:scale-95 disabled:opacity-50">Sign in</button>
+
+        <p class="mt-4 text-xs text-slate-500">This phone stays signed in for 30 days of no use. LanWatch only works here while you're on your home Wi-Fi and LanWatch is running on its computer.</p>
+    </form>
+
+    <script src="{{ url_for('static', filename='js/phone_login.js') }}"></script>
+</body>
+</html>

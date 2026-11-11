@@ -1,0 +1,112 @@
+/* =============================================================================
+   FILE: app/static/css/style.css  -  THE FEW STYLES TAILWIND DOESN'T COVER
+   -----------------------------------------------------------------------------
+   Almost all styling comes from Tailwind (css/tailwind.css). This file only
+   holds the phone layouts below, which apply on screens narrower than 768 px
+   (Tailwind's "md"). On a computer nothing here changes anything.
+   ============================================================================= */
+
+/* On a computer the value box that mobile_tables.js puts in each table cell
+   is ignored by the layout, so the tables look exactly as before. */
+table.mobile-cards td .mc-value {
+    display: contents;
+}
+
+@media (max-width: 767.98px) {
+
+    /* -------------------------------------------------------------------------
+       TABLES AS CARDS  (tables with class="mobile-cards"; js/mobile_tables.js)
+       Each row becomes a card: the first value is its heading, every other
+       value sits on its own line with its column name in front of it.
+       ------------------------------------------------------------------------- */
+    table.mobile-cards,
+    table.mobile-cards tbody,
+    table.mobile-cards tr,
+    table.mobile-cards td {
+        display: block;
+        width: 100%;
+    }
+    table.mobile-cards thead {               /* hidden, but still read out by screen readers */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+    table.mobile-cards tbody tr {
+        padding: 14px 20px;
+    }
+    table.mobile-cards tbody tr.hidden {     /* closed "Details" rows stay closed */
+        display: none;
+    }
+    table.mobile-cards td {
+        padding: 5px 0 !important;
+        max-width: none !important;         /* undo the table's squeezing and cutting off */
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        overflow-wrap: anywhere;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    table.mobile-cards td[data-label] {      /* column name | value, side by side */
+        display: flex;
+        gap: 0.75rem;
+        align-items: baseline;
+        text-align: left !important;
+    }
+    table.mobile-cards td[data-label]::before {
+        content: attr(data-label);
+        flex: 0 0 6.5rem;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #8b95a7;
+        overflow-wrap: normal;
+        line-height: 1.35;
+    }
+    table.mobile-cards td .mc-value {
+        display: block;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    /* the first value is the card's heading */
+    table.mobile-cards td:first-child {
+        padding-bottom: 8px !important;
+        font-size: 1rem;
+    }
+    /* "no data yet", "Showing 10 of 86" and opened "Details" rows: full width */
+    table.mobile-cards td[colspan] {
+        padding: 4px 0 !important;
+    }
+
+    /* -------------------------------------------------------------------------
+       SWIPEABLE DEVICE CARDS  (Dashboard, "Devices Connected Right Now";
+       dashboard.js COMPONENT 3). The strip scrolls sideways with a finger and
+       stops on a card; the ← → buttons are hidden.
+       ------------------------------------------------------------------------- */
+    #fleetCarouselViewport {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 4px;
+    }
+    #fleetCarouselViewport::-webkit-scrollbar {
+        display: none;
+    }
+    #fleetCarouselTrack {
+        transform: none !important;          /* the buttons' sliding isn't used here */
+        transition: none !important;
+    }
+    #fleetCarouselTrack .fleet-card {
+        width: 85%;                          /* a little of the next card shows: there's more */
+        scroll-snap-align: start;
+    }
+    #fleetCarouselTrack .fleet-card:hover {
+        transform: none;
+    }
+}

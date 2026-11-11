@@ -1,0 +1,169 @@
+{# ==========================================================================
+   FILE: app/templates/reports.html  -  REPORTS PAGE
+   --------------------------------------------------------------------------
+   Opened at: /reports  (route in app/__init__.py)
+   Logic:     static/js/reports.js
+   Layout:    extends templates/base.html (head, sidebar, header frame,
+              phone menu). This file only fills in its blocks.
+   This file only describes WHAT is on the page. The JavaScript finds the
+   elements by their id="..." and fills them with data from the API.
+
+   Sections                        id(s) the JavaScript fills
+     Report builder                reportType, periodSelect, generateBtn
+     Load warning bar              reportWarning
+     Summary report                reportTitle, reportSubtitle, reportBody, csvBtn, printBtn
+     AI report (local AI)          aiTitle, aiSubtitle, aiBadge, aiReportBody, aiActions
+
+   (This whole block is a template comment: Flask removes it before
+    sending the page, so it never reaches the browser.)
+   ========================================================================== #}
+{% extends "base.html" %}
+{% set active_page = "reports" %}
+{% block title %}Reports{% endblock %}
+
+{% block head %}
+    <!-- Print / Save as PDF: plain black-on-white report, no app chrome -->
+    <style>
+        @media print {
+            body { background: #fff !important; color: #000 !important; }
+            main { margin-left: 0 !important; }
+            #reportOutput, #reportOutput *, #aiReportWidget, #aiReportWidget * {
+                color: #000 !important;
+                background: transparent !important;
+                border-color: #bbb !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+            }
+            /* Print only the widget whose Print button was pressed */
+            body.print-ai #reportOutput { display: none !important; }
+            body.print-summary #aiReportWidget { display: none !important; }
+        }
+    </style>
+{% endblock %}
+
+{% block header %}
+            <div class="min-w-0 flex-1">
+                <h2 class="truncate text-sm font-semibold tracking-wide text-white sm:text-base">Home Network Monitoring System</h2>
+                <p class="hidden truncate font-mono text-xs text-slate-400 sm:block">Summaries of your devices, alerts and scans</p>
+            </div>
+{% endblock %}
+
+{% block content %}
+        <section class="mx-auto flex max-w-[1440px] flex-col gap-6 p-5 md:p-8">
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3 print:hidden">
+                <h1 class="text-2xl font-bold tracking-tight text-white">Reports</h1>
+                <div class="font-mono text-xs text-slate-400">
+                    Data loaded: <span id="loadedAt" class="font-semibold text-[#00F2FE]">—</span>
+                </div>
+            </div>
+
+            <!-- ===== SECTION: REPORT BUILDER =====
+                 Trigger: "Generate" -> reports.js loadData() + generate() + generateAiReport() -->
+            <div class="relative overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md p-6 shadow-2xl print:hidden">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#00F2FE]/50 via-[#8B5CF6]/30 to-transparent"></div>
+                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[#00F2FE]">description</span>
+                            <h3 class="text-lg font-bold text-white tracking-wide">Build a Report</h3>
+                        </div>
+                        <p class="mt-1 max-w-xl text-sm text-slate-300">
+                            Choose a report and how far back to look, then press Generate. The summary refreshes straight away, and the local AI writes a plain-English report in the AI Network Report section (this can take up to a minute).
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div>
+                            <label for="reportType" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Report</label>
+                            <select id="reportType"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-3 py-2.5 text-sm text-[#00F2FE] focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] sm:w-56">
+                                <option value="overview">Overall network summary</option>
+                                <option value="devices">Device summary</option>
+                                <option value="security">Security report</option>
+                                <option value="history">History report</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="periodSelect" class="mb-1 block font-mono text-xs uppercase tracking-wider text-slate-400">Period</label>
+                            <select id="periodSelect"
+                                class="font-mono w-full rounded-lg border border-white/10 bg-[#090D16] px-3 py-2.5 text-sm text-slate-200 focus:border-[#00F2FE] focus:outline-none focus:ring-1 focus:ring-[#00F2FE] sm:w-44">
+                                <option value="24h">Last 24 hours</option>
+                                <option value="7d" selected>Last 7 days</option>
+                                <option value="30d">Last 30 days</option>
+                                <option value="all">All time</option>
+                            </select>
+                        </div>
+                        <button id="generateBtn" type="button"
+                            class="h-10 rounded-lg bg-gradient-to-r from-[#00F2FE] to-[#8B5CF6] px-6 font-bold text-[#090D16] shadow-[0_0_20px_rgba(0,242,254,0.3)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
+                            Generate
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning bar: shown by reports.js loadData() if an API fails -->
+            <div id="reportWarning" class="hidden rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/10 px-5 py-3 font-mono text-xs text-[#FBBF24] print:hidden" role="alert"></div>
+
+            <!-- ===== SECTION: NETWORK SUMMARY (reports.js reportOverview + render) ===== -->
+            <section id="reportOutput" class="overflow-hidden rounded-xl border border-white/10 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="flex flex-col gap-3 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="material-symbols-outlined text-[#00F2FE]">insights</span>
+                        <div>
+                            <h3 id="reportTitle" class="font-bold tracking-wide text-white">Overall Network Summary</h3>
+                            <p id="reportSubtitle" class="font-mono text-xs text-slate-400">Loading report data…</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 print:hidden">
+                        <button id="csvBtn" type="button"
+                            class="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all">
+                            <span class="material-symbols-outlined text-base">download</span> CSV
+                        </button>
+                        <button id="printBtn" type="button"
+                            class="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:border-[#8B5CF6]/40 hover:text-[#C4ABFF] transition-all">
+                            <span class="material-symbols-outlined text-base">print</span> Print or PDF
+                        </button>
+                    </div>
+                </div>
+                <div id="reportBody" class="flex flex-col gap-6 p-5">
+                    <p class="py-8 text-center font-mono text-slate-400">Loading report data…</p>
+                </div>
+            </section>
+
+            <!-- ===== SECTION: AI REPORT (reports.js GROUP 6 -> POST /api/reports/generate; placeholder if the AI is off) ===== -->
+            <section id="aiReportWidget" class="relative overflow-hidden rounded-xl border border-[#8B5CF6]/30 bg-[#0F172A]/70 backdrop-blur-md shadow-lg">
+                <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-[#8B5CF6]/60 via-[#00F2FE]/30 to-transparent print:hidden"></div>
+                <div class="flex flex-col gap-3 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="material-symbols-outlined text-[#8B5CF6]">auto_awesome</span>
+                        <div>
+                            <h3 id="aiTitle" class="font-bold tracking-wide text-white">AI Network Report</h3>
+                            <p id="aiSubtitle" class="font-mono text-xs text-slate-400">Written by AI from your network data</p>
+                        </div>
+                    </div>
+                    <span id="aiBadge" class="self-start rounded-full border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-3 py-1 font-mono text-xs text-[#C4ABFF] sm:self-auto print:hidden">Not available</span>
+                    <div id="aiActions" class="hidden gap-2 print:hidden">
+                        <button id="aiCopyBtn" type="button"
+                            class="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:border-[#00F2FE]/40 hover:text-[#00F2FE] transition-all">
+                            <span class="material-symbols-outlined text-base">content_copy</span> Copy
+                        </button>
+                        <button id="aiPrintBtn" type="button"
+                            class="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-slate-200 hover:border-[#8B5CF6]/40 hover:text-[#C4ABFF] transition-all">
+                            <span class="material-symbols-outlined text-base">print</span> Print or PDF
+                        </button>
+                    </div>
+                </div>
+                <div id="aiReportBody" class="p-6" aria-live="polite">
+                    <div class="flex flex-col items-center gap-3 py-8 text-center">
+                        <span class="material-symbols-outlined text-4xl text-[#8B5CF6]/60">smart_toy</span>
+                        <p class="max-w-lg text-sm text-slate-300">Pick a report type above and press Generate: the AI on this computer will write the report here.</p>
+                    </div>
+                </div>
+            </section>
+        </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}
